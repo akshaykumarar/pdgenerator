@@ -369,37 +369,29 @@ class VerificationPointers(BaseModel):
     red_flags: List[str] = Field(default_factory=list, description="Red flags to watch for")
     document_references: List[Dict[str, str]] = Field(default_factory=list, description="Document references with expected content")
 
-class ConciseSummarySection(BaseModel):
-    """A section of the concise summary."""
-    patient_details: str = Field(..., description="Patient details")
-    case_explanation: str = Field(..., description="Case explanation")
-    cpt_codes: str = Field(..., description="CPT codes")
-    icd_codes: str = Field(..., description="ICD codes")
-
-class ExtractionExpectation(BaseModel):
-    """Extraction expectation section."""
-    insurance_provider: str = Field(..., description="Insurance provider")
-    cpt: str = Field(..., description="CPT")
-    icd: str = Field(..., description="ICD")
-    encounters: str = Field(..., description="Encounters")
-
-class DocumentPurposeAndGaps(BaseModel):
-    """Document purpose and gaps section."""
-    document_purpose: str = Field(..., description="Document purpose")
-    purpose_gap: str = Field(..., description="Purpose gap")
-    information_gap: str = Field(..., description="Information gap")
-
-class OverallExpectationAndGaps(BaseModel):
-    """Overall expectation and gaps section."""
-    overall_expectation: str = Field(..., description="Overall expectation")
-    overall_gaps: str = Field(..., description="Overall gaps")
+class VerificationParameter(BaseModel):
+    """Verification parameter analysis."""
+    correct_items: List[str] = Field(..., description="List of items that are medically/clinically correct or present")
+    gaps_and_issues: List[str] = Field(..., description="List of gaps, missing criteria, or issues intentionally injected or found")
 
 class ConciseSummary(BaseModel):
-    """Concise clinical summary for a user."""
-    patient_profile_and_case_explanation: ConciseSummarySection = Field(..., description="Patient profile and case explanation")
-    extraction_expectation: ExtractionExpectation = Field(..., description="Extraction expectation")
-    document_purpose_and_gaps: DocumentPurposeAndGaps = Field(..., description="Document purpose and gaps")
-    overall_expectation_and_gaps: OverallExpectationAndGaps = Field(..., description="Overall expectation and gaps")
+    """Clinical summary for a user."""
+    test_case_and_overview: str = Field(..., description="Test case description and case overview.")
+    details_from_extraction: List[str] = Field(..., description="Details from extraction like CPT, ICD codes, and insurance.")
+    likelihood_without_documents: str = Field(..., description="Likelihood/PA probability without considering any supporting documents.")
+    likelihood_change_with_documents: List[str] = Field(..., description="Likelihood PA score change considering each document; ex. what happens if an individual report is uploaded?")
+    attachments_list: List[str] = Field(
+        default_factory=list,
+        description="List of attachments (generated documents) with a 1-line why-it-matters; ex. 'MRI Knee — Confirms structural pathology and severity.'",
+    )
+    likelihood_expectations_post_attachments: Optional[VerificationParameter] = Field(
+        default=None,
+        description="Post-attachment expectations: short lists of correct responses and gaps/issues (max 4–5 each).",
+    )
+    medical_necessity: VerificationParameter = Field(..., description="Analysis of medical necessity including correct items and gaps/issues")
+    policy_compliance: VerificationParameter = Field(..., description="Analysis of policy compliance including correct items and gaps/issues")
+    documentation_quality: VerificationParameter = Field(..., description="Analysis of documentation quality including correct items and gaps/issues")
+    clinical_timeline_strength: VerificationParameter = Field(..., description="Analysis of clinical timeline strength including correct items and gaps/issues")
 
 class AnnotatorSummary(BaseModel):
     """Annotator verification guide - created after persona and documents are generated."""

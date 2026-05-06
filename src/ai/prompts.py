@@ -1,4 +1,4 @@
-s """
+"""
 AI Prompts Configuration
 
 This file contains all AI prompts and instructions used throughout the application.
@@ -146,7 +146,6 @@ F. **GEOGRAPHIC CONSTRAINT (MANDATORY)**:
 # - Document Formatting: Critical for validation - do not change markers
 # - Persona Requirements: Add/remove required patient fields
 
-
 def _build_clinical_logic_instruction(case_details: dict) -> str:
     """
     Build the Clinical Logic Application instruction (prompt instruction #2).
@@ -166,7 +165,6 @@ def _build_clinical_logic_instruction(case_details: dict) -> str:
         "diagnostic workup, and explicit treatment rationale. Every finding must positively "
         "corroborate the requested procedure."
     )
-
 
 def get_clinical_data_prompt(case_details: dict, patient_state: dict, document_plan: dict, user_feedback: str = "",
                              history_context: str = "", existing_persona: dict = None) -> str:
@@ -290,7 +288,7 @@ def get_clinical_data_prompt(case_details: dict, patient_state: dict, document_p
           Do NOT attempt to use markdown or raw text in `content`—it MUST be a structured JSON object.
           The `title_hint` field should match the template's title or logically reflect it.
          - **FEEDBACK-DRIVEN DOCUMENTS (CRITICAL ESCAPE HATCH)**:
-           If the USER FEEDBACK mentions missing documents (e.g., "Missing ECG", "No Risk Assessment"), you MUST invent and generate a NEW document for each requested item, even if it is not in the DOCUMENT PLAN. Create a fitting JSON structure for these ad-hoc documents (e.g. `{{"doc_type": "ECG", "findings": "...", "interpretation": "..."}}`) and add them to the `documents` list.
+           If the USER FEEDBACK mentions missing documents (e.g., "Missing ECG", "No Risk Assessment"), you MUST invent and generate a NEW document for each requested item, even if it is not in the DOCUMENT PLAN. Create a fitting JSON structure for these ad-hoc documents (e.g. `{{\"doc_type\": \"ECG\", \"findings\": \"...\", \"interpretation\": \"...\"}}`) and add them to the `documents` list.
         - **PROHIBITED TITLES**: No "Approval Letters" or "Denial Notices". Only clinical evidence.
         - **TITLES**: MUST be UNIQUE and DESCRIPTIVE (e.g. "Cardiology_Consult", "Echo_Report").
         - **NO MARKDOWN BOLD**: Do not use `**Text**`.
@@ -313,17 +311,20 @@ def get_clinical_data_prompt(case_details: dict, patient_state: dict, document_p
     8. **TEMPORAL CONSISTENCY (CRITICAL - NEW REQUIREMENT)**:
        - **Today's Date**: {datetime.datetime.now().strftime("%m-%d-%Y")}
        - **Expected Procedure Date**: MUST be 7-90 days in the FUTURE from today
-       - **Timeline Requirements**:
-         * Medical history events: 6 months to 5 years BEFORE procedure date
-         * Recent encounters/consultations: 1-12 weeks BEFORE procedure date
-         * Lab results/diagnostic tests: 1-4 weeks BEFORE procedure date
-         * ALL dates in documents must be BEFORE the procedure date
+       - **Timeline Requirements (IMPORTANT)**:
+         * Completed clinical events (encounters, consults, ER visits, doctor notes, imaging, lab/pathology results, prior procedures, vaccinations, vitals recorded) MUST be dated ON or BEFORE today's date.
+         * Future-dated "completed" items are NOT allowed.
+         * Future dates are allowed ONLY for: expected_procedure_date and scheduling text inside follow_up_instructions / pre-procedure hold instructions (i.e., plans), not as completed encounters/reports.
+         * Medical history events: 6 months to 5 years BEFORE today's date
+         * Recent encounters/consultations: 1-12 weeks BEFORE today's date
+         * Lab results/diagnostic tests: 1-4 weeks BEFORE today's date
+         * ALL completed evidence dates must be BEFORE the expected procedure date
        - **Example Timeline**:
-         * Today: 2026-02-17
-         * Procedure Date: 2026-03-15 (27 days in future)
-         * Recent Consultation: 2026-02-10 (5 days before today)
-         * Lab Results: 2026-02-05 (12 days before today)
-         * Medical History: 2024-08-15 (18 months ago)
+         * Today: {datetime.datetime.now().strftime("%m-%d-%Y")}
+         * Procedure Date: {(datetime.datetime.now() + datetime.timedelta(days=30)).strftime("%m-%d-%Y")} (example: 30 days in future)
+         * Recent Consultation (completed): {(datetime.datetime.now() - datetime.timedelta(days=7)).strftime("%m-%d-%Y")} (example: 7 days before today)
+         * Lab Results (completed): {(datetime.datetime.now() - datetime.timedelta(days=12)).strftime("%m-%d-%Y")} (example: 12 days before today)
+         * Medical History (completed): {(datetime.datetime.now() - datetime.timedelta(days=600)).strftime("%m-%d-%Y")} (example: ~20 months ago)
     9. **FACILITY LOCATION (CRITICAL - NEW REQUIREMENT)**:
        - **Procedure Facility**: Generate a realistic healthcare facility where the procedure will be performed
        - **Requirements**:
@@ -635,7 +636,7 @@ def get_feedback_instruction(user_feedback: str) -> str:
 
     **FEEDBACK IMPLEMENTATION MANDATE:**
     - If feedback requests a DEMOGRAPHIC change (e.g. gender, name, age) or baseline clinical change (e.g. remove an allergy, change a medication), you MUST immediately break the "Strict Identity Lock" and apply the requested change across ALL sections (persona, bio narrative, documents, pronouns).
-    - If feedback requests **more supporting reports**, **more observations**, or **clinical timeline** — ADD those documents and enrich encounters/bio_narrative. The `patient_persona` object remains MANDATORY in the output; never omit it when adding documents.
+    - If feedback requests **more supporting reports**, **more observations**, or **clinical timeline** — ADD those to `documents` and enrich `encounters`/`bio_narrative`. The `patient_persona` object remains MANDATORY in the output; never omit it when adding documents.
     - If feedback points out **missing documents** (e.g. ECG, Risk Assessment, Stress Test), you MUST invent and generate those specific documents and add them to the `documents` list. DO NOT wait for a template. Invent a logical JSON structure for the newly requested document. The `patient_persona` MUST still be included.
     - If feedback points out a **missing clinical timeline or history**, you MUST extensively populate the `encounters`, `images`, `reports`, and `procedures` lists AND `bio_narrative` to show a clear longitudinal history matching the findings.
     - If feedback points out **missing physical exam/vital signs**, you MUST populate the `vital_signs` block and add examination findings to the encounters.
@@ -731,246 +732,116 @@ RETURN ONLY THE FIXED CONTENT (no explanations, no code blocks)."""
 # WHEN TO USE: After persona (and optionally documents) are generated
 # PURPOSE: Create actionable guidance for manual verification and QA
 
-def get_concise_summary_prompt(
+def get_annotator_summary_prompt(
     case_details: dict,
     patient_persona: dict,
     generated_documents: list = None,
-    existing_summary: str = None,
     search_results: dict = None
 ) -> str:
     """
-    Generates prompt for creating a concise summary document.
-    
-    Args:
-        case_details: Dict with 'procedure', 'outcome', 'details'
-        patient_persona: The generated patient persona object (dict or Pydantic)
-        generated_documents: Optional list of generated documents
-        existing_summary: Optional existing summary to update
-        search_results: Optional web search results for CPT/ICD codes
-    
-    Returns:
-        Complete prompt string for concise summary generation
+    Generates prompt for creating an annotator verification guide.
     """
-    
-    # Extract persona details safely
     if hasattr(patient_persona, 'model_dump'):
         persona_dict = patient_persona.model_dump()
     else:
         persona_dict = patient_persona
-    
+        
     patient_name = f"{persona_dict.get('first_name', 'Unknown')} {persona_dict.get('last_name', 'Unknown')}"
-    patient_dob = persona_dict.get('dob', '')
-    patient_gender = persona_dict.get('gender', '')
     bio_narrative = persona_dict.get('bio_narrative', '')
     
-    # Build patient info (only show fields with data)
-    patient_info_lines = [f"- Name: {patient_name}"]
-    if patient_dob:
-        patient_info_lines.append(f"- DOB: {patient_dob}")
-    if patient_gender:
-        patient_info_lines.append(f"- Gender: {patient_gender}")
-    patient_info_section = "\n".join(patient_info_lines)
-    
-    # Build document list if available
-    documents_section = ""
-    if generated_documents and len(generated_documents) > 0:
-        doc_list = "\n".join([f"   - {doc.title_hint if hasattr(doc, 'title_hint') else doc.get('title_hint', 'Unknown')}" for doc in generated_documents])
-        documents_section = f"""
-**GENERATED CLINICAL DOCUMENTS ({len(generated_documents)} total):**
-{doc_list}
-
-You MUST analyze these documents to create the verification checklist.
-"""
-    else:
-        documents_section = """
-**CLINICAL DOCUMENTS STATUS:**
-Reports are pending. Clinical documents will be attached later based on requirements.
-The verification checklist section should indicate: "Reports pending - verification pointers will be available when clinical documents are generated."
-"""
-    
-    # Determine which sections to generate
-    sections_instruction = ""
-    if generated_documents and len(generated_documents) > 0:
-        sections_instruction = """
-**REQUIRED SECTIONS (ALL 4):**
-
-1. **Case Explanation**: 
-   - **CRITICAL**: Extract the TARGET CPT CODE and DESCRIPTION from the patient bio narrative above
-   - Start with: "Target Procedure: CPT [code] - [description]"
-   - Extract ALL CPT codes mentioned in the bio narrative
-   - Extract ALL ICD-10 codes with descriptions from the bio narrative
-   - Explain the clinical context and patient presentation
-   - Explain the expected outcome (Approval/Denial) with clear rationale
-   - Include clinical justification for the procedure
-   - **NEVER use "N/A"** - if a code is not in the bio narrative, state "See clinical documents for code details"
-
-2. **Medical Details**: 
-   - Key medical history elements from the persona
-   - How the diagnoses (ICD-10 codes) support or contradict the procedure request
-   - Unique or noteworthy aspects of this case
-   - Any complicating factors or special considerations
-   - Expected documentation elements
-
-3. **Patient Profile Summary**: 
-   - Prior health concerns and relevant medical history
-   - Medical necessity justification for the target procedure
-   - How the CPT code aligns with the patient's condition
-   - Procedure justification based on clinical profile
-   - Relevant social, lifestyle, or demographic factors
-
-4. **Verification Pointers**: 
-   - Key items to verify in the generated documents
-   - Supporting evidence that should be present
-   - Red flags or inconsistencies to watch for
-   - Document-specific expectations (what each document should contain)
-"""
-    else:
-        sections_instruction = """
-**REQUIRED SECTIONS (3 of 4 - Documents Pending):**
-
-1. **Case Explanation**: 
-   - Start with a clear statement of the TARGET PROCEDURE including CPT code and full description
-   - Example: "Target Procedure: CPT 50360 - Renal Transplantation, Kidney Allotransplantation"
-   - Explain the clinical context and patient presentation
-   - List ALL CPT codes that will be referenced in this case
-   - List ALL ICD-10 codes with descriptions (primary and secondary diagnoses)
-   - Explain the expected outcome (Approval/Denial) with clear rationale
-   - Include clinical justification for the procedure
-
-2. **Medical Details**: 
-   - Key medical history elements from the persona
-   - How the diagnoses support or contradict the procedure request
-   - Unique or noteworthy aspects of this case
-   - Expected documentation elements when reports are generated
-
-3. **Patient Profile Summary**: 
-   - Prior health concerns and relevant medical history
-   - Medical necessity justification for the target procedure
-   - How the CPT code aligns with the patient's condition
-   - Procedure justification based on clinical profile
-
-4. **Verification Pointers**: 
-   INDICATE: "Reports pending - verification checklist will be available when clinical documents are generated."
-   INDICATE: "Reports pending - verification checklist will be available when clinical documents are generated."
-"""
-
-    # Build reference information section from web search
-    reference_section = ""
-    if search_results:
-        # Add CPT info if available
-        if search_results.get('cpt_info'):
-            cpt_info = search_results['cpt_info']
-            reference_section = f"""
-
-**REFERENCE INFORMATION (Authoritative Source):**
-
-Target CPT Code (from official medical coding database):
-- Code: {cpt_info.get('code', 'N/A')}
-- Official Description: {cpt_info.get('description', 'N/A')}
-- Source: {cpt_info.get('source_url', 'Authoritative medical coding database')}
-
-**IMPORTANT**: Use the official CPT description above when writing the case explanation. This is from an authoritative source and should be referenced accurately.
-"""
-        
-        # Add verification notes if present
-        if search_results.get('verification_notes'):
-            notes = search_results['verification_notes']
-            notes_text = '\n'.join([f"- {note}" for note in notes])
-            reference_section += f"""
-
-**DATA QUALITY NOTES (IMPORTANT - Include in Verification Section):**
-
-The following issues were detected during data preparation. These MUST be included in the verification checklist:
-
-{notes_text}
-
-**ACTION REQUIRED**: Add these notes to the "Verification Pointers" section so annotators know what needs manual verification.
-"""
+    doc_list = "\n".join([f"   - {doc.title_hint if hasattr(doc, 'title_hint') else doc.get('title_hint', 'Unknown')}" for doc in (generated_documents or [])])
     
     return f"""
-**TASK: Generate a Concise Clinical Summary**
+**TASK: Generate an Annotator Verification Guide**
 
-You are creating a concise clinical summary for a user. This is a clinical document.
+**PATIENT:** {patient_name}
+**CLINICAL SCENARIO:** Expected Outcome: {case_details.get('outcome', 'Unknown')}
+**PATIENT BIO NARRATIVE:** {bio_narrative}
 
-**PATIENT INFORMATION:**
-{patient_info_section}
+**GENERATED CLINICAL DOCUMENTS:**
+{doc_list if generated_documents else 'Documents Pending'}
 
-{reference_section}
-
-**CLINICAL SCENARIO (SOURCE OF TRUTH):**
-- Expected Outcome: {case_details.get('outcome', 'Unknown')}
-- Clinical Context: {case_details.get('details', 'See patient bio narrative')}
-
-**PATIENT BIO NARRATIVE (KEY SOURCE OF MEDICAL INFORMATION):**
-{bio_narrative if bio_narrative else 'Not available - extract from generated documents'}
-
-**IMPORTANT**: Extract ALL CPT codes and ICD-10 codes from the bio narrative above. Do NOT show "N/A" - if information is missing, extract it from the bio narrative or indicate it should be verified from the clinical documents.
-
-{documents_section}
-
-{sections_instruction}
-
-**DETAILED INSTRUCTIONS FOR EACH SECTION:**
-
-### 1. Patient Profile and Case Explanation
-Provide a clear, concise explanation in bullet points. **Highlight** keywords in bold.
-- **Patient Details**: Name, DOB, Gender
-- **Case Explanation**: A very short summary of the case.
-- **CPT Codes**: List of CPT codes.
-- **ICD Codes**: List of ICD codes.
-
-### 2. Extraction Expectation
-Provide the following information in bullet points. **Highlight** keywords in bold.
-- **Insurance Provider**: Payer Name, Plan Name, Plan Type. These details should be extracted from the patient's persona.
-- **CPT**: CPT codes.
-- **ICD**: ICD codes.
-- **Encounters**: List of encounters.
-
-### 3. Document Purpose and Gaps
-Provide the following information in bullet points. **Highlight** keywords in bold.
-- **Document Purpose**: Purpose of each document.
-- **Purpose Gap**: Gaps in the purpose of the documents.
-- **Information Gap**: Gaps in the information of the documents.
-
-### 4. Overall Expectation and Gaps
-Provide the following information in bullet points. **Highlight** keywords in bold.
-- **Overall Expectation**: Overall expectation of the case.
-- **Overall Gaps**: Overall gaps in the case.
-
-**OUTPUT FORMAT:**
-Return a structured JSON object with the following schema:
-
-{{
-    "patient_profile_and_case_explanation": {{
-        "patient_details": "...",
-        "case_explanation": "...",
-        "cpt_codes": "...",
-        "icd_codes": "..."
-    }},
-    "extraction_expectation": {{
-        "insurance_provider": "...",
-        "cpt": "...",
-        "icd": "...",
-        "encounters": "..."
-    }},
-    "document_purpose_and_gaps": {{
-        "document_purpose": "...",
-        "purpose_gap": "...",
-        "information_gap": "..."
-    }},
-    "overall_expectation_and_gaps": {{
-        "overall_expectation": "...",
-        "overall_gaps": "..."
-    }}
-}}
-
-**CRITICAL RULES:**
-1. Write for a USER audience, not a clinical audience
-2. Be specific and actionable - avoid vague statements
-3. Reference actual CPT and ICD-10 codes from the persona
-4. If documents are not available, clearly indicate pending status
+**REQUIRED SECTIONS:**
+1. **Case Explanation**: Target Procedure, expected outcome, and rationale.
+2. **Medical Details**: Key history, diagnoses, and complexity.
+3. **Patient Profile Summary**: Prior concerns, necessity justification.
+4. **Verification Pointers**: Key items to verify, supporting evidence, red flags.
 """
 
+def get_concise_summary_prompt(
+    case_details: dict,
+    patient_persona: dict,
+    generated_documents: list = None,
+    search_results: dict = None,
+    canonical_payer: dict | None = None,
+    objective_evidence: str = "",
+    policy_lens: str = "",
+) -> str:
+    """
+    Generates prompt for creating a structured clinical summary.
+    """
+    if hasattr(patient_persona, 'model_dump'):
+        persona_dict = patient_persona.model_dump()
+    else:
+        persona_dict = patient_persona
+
+    patient_name = f"{persona_dict.get('first_name', 'Unknown')} {persona_dict.get('last_name', 'Unknown')}"
+    bio_narrative = persona_dict.get('bio_narrative', '')
+    doc_list = "\n".join([f"   - {doc.title_hint if hasattr(doc, 'title_hint') else doc.get('title_hint', 'Unknown')}" for doc in (generated_documents or [])])
+    payer_lines = []
+    if canonical_payer:
+        if canonical_payer.get("payer_name"):
+            payer_lines.append(f"Payer: {canonical_payer.get('payer_name')}")
+        if canonical_payer.get("plan_name"):
+            payer_lines.append(f"Plan: {canonical_payer.get('plan_name')}")
+        if canonical_payer.get("plan_id"):
+            payer_lines.append(f"Plan ID: {canonical_payer.get('plan_id')}")
+        if canonical_payer.get("member_id"):
+            payer_lines.append(f"Member ID: {canonical_payer.get('member_id')}")
+        if canonical_payer.get("policy_number"):
+            payer_lines.append(f"Policy #: {canonical_payer.get('policy_number')}")
+    payer_block = "\n".join([f"- {l}" for l in payer_lines]) if payer_lines else ""
+    objective_block = objective_evidence.strip()
+    lens = (policy_lens or "").strip()
+
+    return f"""
+**TASK: Generate a Structured Clinical Summary for Patient: {patient_name}**
+
+**1. Patient's Clinical Narrative:**
+{bio_narrative}
+
+**2. Generated Clinical Documents:**
+{doc_list if generated_documents else 'Documents Pending'}
+
+**3. Canonical Facts (Authoritative):**
+{payer_block if payer_block else 'No authoritative payer detected.'}
+{objective_block if objective_block else ''}
+
+**3. Instructions for Summary Generation (Output as a JSON object):**
+
+You are to act as a clinical analyst. Your task is to synthesize the provided information into a structured, clinically-focused summary. The summary should be structured as follows:
+
+- **test_case_and_overview**: A brief paragraph summarizing the test case details and the case overview.
+- **details_from_extraction**: A bulleted list of details from extraction like CPT, ICD codes, and insurance.
+- **likelihood_without_documents**: The Likelihood/PA probability without considering any supporting documents.
+- **likelihood_change_with_documents**: A bulleted list detailing the Likelihood PA score change considering each document; ex. what happens if an individual report is uploaded (if the report creates a positive impact, or if the gap is still not clear from it).
+- **attachments_list**: A bulleted list of attachments. Each item must be a single concise line formatted like: "Document Name — why it matters".
+- **likelihood_expectations_post_attachments**: After considering all attachments, provide an object with `correct_items` and `gaps_and_issues` (each list must contain max 5 short key points).
+- **medical_necessity**: Analysis of medical necessity indicating `correct_items` and `gaps_and_issues`.
+- **policy_compliance**: Analysis of policy compliance indicating `correct_items` and `gaps_and_issues`.
+- **documentation_quality**: Analysis of documentation quality indicating `correct_items` and `gaps_and_issues`.
+- **clinical_timeline_strength**: Analysis of clinical timeline strength indicating `correct_items` and `gaps_and_issues`.
+
+**IMPORTANT:**
+- The summary must be based *only* on the information provided.
+- Do not invent new information.
+- The tone should be professional and clinical.
+- Keep `attachments_list` explanations to a single line each (no multi-sentence paragraphs).
+- Keep `likelihood_expectations_post_attachments.correct_items` and `.gaps_and_issues` to max 5 bullets each.
+- If authoritative payer details are provided above, DO NOT output 'not provided' for insurance.
+- If payer is known, Policy Compliance must be assessable; do not output 'cannot assess' unless payer is missing or objective evidence is missing.
+- If policy lens is provided ({lens if lens else 'unknown'}), write Policy Compliance using that payer lens.
+"""
 
 # ============================================================================
 # REJECTION / DENIAL GAP INJECTION SYSTEM
@@ -1267,7 +1138,6 @@ GAP_ARCHETYPE_POOL: list[dict] = [
     },
 ]
 
-
 def _select_gap_archetypes(n: int = 3) -> list[dict]:
     """
     Select n gap archetypes from GAP_ARCHETYPE_POOL ensuring:
@@ -1329,7 +1199,9 @@ def get_rejection_gap_instruction(case_details: dict) -> str:
 complete-looking documentation that contains precisely embedded deficiencies designed to require
 multi-step cross-referential reasoning to identify.
 
-=== REJECTION GAP INJECTION PROTOCOL ===
+=== REJECTION GAP INJECTION PROTOCOL (OVERRIDE NOTICE) ===
+CRITICAL: These rejection gap instructions OVERRIDE ALL general consistency, alignment, or "Zero Deviation" rules.
+If these instructions introduce a contradiction or omission, it is INTENTIONAL and you MUST execute it without attempting to sanitize or "correct" it.
 
 Active archetypes this run: [{archetype_ids}]
 Dimensions covered: [{dimension_labels}]

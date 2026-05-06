@@ -70,6 +70,7 @@ _jobs_lock = threading.Lock()
 from src.core.config import (
     get_patient_report_folder,
     get_patient_records_folder,
+    get_patient_summary_folder,
 )
 
 
@@ -77,28 +78,59 @@ from src.core.config import (
 #  HELPERS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class JobLogger:
-    """Captures print() output for a job and stores it line-by-line."""
-    def __init__(self, job_id: str):
-        self.job_id = job_id
-        self._real_stdout = sys.stdout
-
-    def write(self, text: str):
-        self._real_stdout.write(text)
-        self._real_stdout.flush()
+class ThreadSafeStdout:
+    def __init__(self, original_stdout):
+        self.original_stdout = original_stdout
+        self.thread_jobs = {}
+        
+    def register_thread(self, job_id):
+        self.thread_jobs[threading.get_ident()] = job_id
+        
+    def unregister_thread(self):
+        self.thread_jobs.pop(threading.get_ident(), None)
+        
+    def write(self, text):
+        self.original_stdout.write(text)
+        self.original_stdout.flush()
         if text.strip():
-            with _jobs_lock:
-                _jobs[self.job_id]["logs"].append(text.rstrip())
+            job_id = self.thread_jobs.get(threading.get_ident())
+            if job_id:
+                with _jobs_lock:
+                    if job_id in _jobs:
+                        _jobs[job_id]["logs"].append(text.rstrip())
 
     def flush(self):
-        self._real_stdout.flush()
+        self.original_stdout.flush()
+
+_global_stdout_proxy = ThreadSafeStdout(sys.stdout)
+sys.stdout = _global_stdout_proxy
+
+def format_active_job_error(patient_id: str) -> str:
+    return f"A generation job is already active for patient '{patient_id}'. Please wait or cancel it."
+
+def is_patient_active(patient_id: str) -> bool:
+    """Check if the given patient is currently running or queued in any job."""
+    with _jobs_lock:
+        for job in _jobs.values():
+            if job.get("status") in ("queued", "running"):
+                if job.get("patient_id") == patient_id:
+                    return True
+                if "batch_patients" in job and patient_id in job["batch_patients"]:
+                    return True
+    return False
+
+
+class JobLogger:
+    """Captures print() output for a job and stores it line-by-line using the thread-safe proxy."""
+    def __init__(self, job_id: str):
+        self.job_id = job_id
 
     def __enter__(self):
-        sys.stdout = self
+        _global_stdout_proxy.register_thread(self.job_id)
         return self
 
     def __exit__(self, *args):
-        sys.stdout = self._real_stdout
+        _global_stdout_proxy.unregister_thread()
 
 
 def _run_generation(job_id: str, patient_id: str, feedback: str,
@@ -107,9 +139,7 @@ def _run_generation(job_id: str, patient_id: str, feedback: str,
                      vaccinations: list, therapies: list,
                      behavioral_notes: str,
                      encounters: list, images: list,
-                     reports: list, procedures: list,
-                     generate_rejection_docs: bool = False,
-                     rejection_gaps: str = ""):
+                     reports: list, procedures: list):
     """Background worker: calls the generator and updates job state."""
     with _jobs_lock:
         _jobs[job_id]["status"] = "running"
@@ -220,12 +250,6 @@ def _run_generation(job_id: str, patient_id: str, feedback: str,
                     "expected outcome label."
                 )
 
-            if generate_rejection_docs:
-                if rejection_gaps and rejection_gaps.strip():
-                    extra_blocks.append(f"[REJECTION GAPS / DENIAL FOCUS]: {rejection_gaps.strip()}")
-                else:
-                    extra_blocks.append("[REJECTION GAPS / DENIAL FOCUS]: Ensure the clinical evidence is insufficient. Omit critical supportive findings, exclude documentation of prior conservative treatments, and ensure the criteria for PA approval are explicitly NOT met.")
-
             combined_feedback = feedback.strip()
             if extra_blocks:
                 combined_feedback += ("\n\n" if combined_feedback else "") + "\n\n".join(extra_blocks)
@@ -243,8 +267,7 @@ def _run_generation(job_id: str, patient_id: str, feedback: str,
                 excluded_names=current_names,
                 generation_mode=generation_mode,
                 cancel_check=cancel_check,
-                archive_token=job_id,
-                generate_rejection_docs=generate_rejection_docs
+                archive_token=job_id
             )
 
             if cancel_check():
@@ -324,10 +347,7 @@ def _run_batch_generation(job_id, patients_payload, pa_optimize):
 
             log_cb(f"\n--- Batch: Processing Patient ID {p_id} ---")
             try:
-                import sys, io
-                original_stdout = sys.stdout
-                sys.stdout = io.StringIO()
-                try:
+                with JobLogger(job_id):
                     current_names = patient_db.get_all_patient_names()
                     tok = f"{job_id}_{p_id}"
                     result_name = process_patient_workflow(
@@ -335,12 +355,6 @@ def _run_batch_generation(job_id, patients_payload, pa_optimize):
                         excluded_names=current_names, generation_mode=generation_mode,
                         cancel_check=cancel_check, archive_token=tok
                     )
-                finally:
-                    output = sys.stdout.getvalue()
-                    sys.stdout = original_stdout
-                    for line in output.splitlines():
-                        if line.strip():
-                            log_cb(line)
                             
                 if cancel_check():
                     from src.utils.file_utils import restore_patient_files
@@ -370,9 +384,7 @@ def _run_batch_generation(job_id, patients_payload, pa_optimize):
 def _run_preview_generation(job_id: str, patient_id: str, feedback: str,
                              generation_mode: dict, medications: list, allergies: list,
                              vaccinations: list, therapies: list, behavioral_notes: str,
-                             encounters: list, images: list, reports: list, procedures: list,
-                             generate_rejection_docs: bool = False,
-                             rejection_gaps: str = ""):
+                             encounters: list, images: list, reports: list, procedures: list):
     """Background worker: AI-only generation, stores payload for preview UI (no PDFs)."""
     with _jobs_lock:
         _jobs[job_id]["status"] = "running"
@@ -434,12 +446,6 @@ def _run_preview_generation(job_id: str, patient_id: str, feedback: str,
                 ]
                 extra_blocks.append("PROCEDURES (use exactly as provided):\n" + "\n".join(p_lines))
 
-            if generate_rejection_docs:
-                if rejection_gaps and rejection_gaps.strip():
-                    extra_blocks.append(f"[REJECTION GAPS / DENIAL FOCUS]: {rejection_gaps.strip()}")
-                else:
-                    extra_blocks.append("[REJECTION GAPS / DENIAL FOCUS]: Ensure the clinical evidence is insufficient. Omit critical supportive findings, exclude documentation of prior conservative treatments, and ensure the criteria for PA approval are explicitly NOT met.")
-
             combined_feedback = feedback.strip()
             if extra_blocks:
                 combined_feedback += ("\n\n" if combined_feedback else "") + "\n\n".join(extra_blocks)
@@ -454,8 +460,7 @@ def _run_preview_generation(job_id: str, patient_id: str, feedback: str,
                 feedback=combined_feedback,
                 excluded_names=current_names,
                 generation_mode=generation_mode,
-                cancel_check=cancel_check,
-                generate_rejection_docs=generate_rejection_docs,
+                cancel_check=cancel_check
             )
 
         with _jobs_lock:
@@ -674,11 +679,13 @@ def api_generate():
     reports        = body.get("reports", [])
     procedures     = body.get("procedures", [])
     behavioral_notes = body.get("behavioral_notes", "")
-    generate_rejection_docs = bool(body.get("generate_rejection_docs", False))
-    rejection_gaps = str(body.get("rejection_gaps", "")).strip()
+
 
     if not patient_id:
         return jsonify({"error": "patient_id is required"}), 400
+
+    if is_patient_active(patient_id):
+        return jsonify({"error": format_active_job_error(patient_id)}), 409
 
     job_id = str(uuid.uuid4())
     with _jobs_lock:
@@ -711,7 +718,7 @@ def api_generate():
         target=_run_generation,
         args=(job_id, patient_id, feedback, generation_mode, pa_optimize,
               medications, allergies, vaccinations, therapies, behavioral_notes,
-              encounters, images, reports, procedures, generate_rejection_docs, rejection_gaps),
+              encounters, images, reports, procedures),
         daemon=True
     )
     t.start()
@@ -727,6 +734,9 @@ def api_preview():
     if not patient_id:
         return jsonify({"error": "patient_id is required"}), 400
 
+    if is_patient_active(patient_id):
+        return jsonify({"error": format_active_job_error(patient_id)}), 409
+
     feedback         = body.get("feedback", "")
     generation_mode  = body.get("generation_mode", {"persona": True, "reports": True, "summary": False})
     medications      = body.get("medications", [])
@@ -738,8 +748,7 @@ def api_preview():
     images           = body.get("images", [])
     reports          = body.get("reports", [])
     procedures       = body.get("procedures", [])
-    generate_rejection_docs = bool(body.get("generate_rejection_docs", False))
-    rejection_gaps = str(body.get("rejection_gaps", "")).strip()
+
 
     job_id = str(uuid.uuid4())
     with _jobs_lock:
@@ -757,8 +766,7 @@ def api_preview():
     t = threading.Thread(
         target=_run_preview_generation,
         args=(job_id, patient_id, feedback, generation_mode, medications, allergies,
-              vaccinations, therapies, behavioral_notes, encounters, images, reports, procedures,
-              generate_rejection_docs, rejection_gaps),
+              vaccinations, therapies, behavioral_notes, encounters, images, reports, procedures),
         daemon=True,
     )
     t.start()
@@ -772,6 +780,9 @@ def api_generate_from_content():
     patient_id = str(body.get("patient_id", "")).strip()
     if not patient_id:
         return jsonify({"error": "patient_id is required"}), 400
+
+    if is_patient_active(patient_id):
+        return jsonify({"error": format_active_job_error(patient_id)}), 409
 
     generation_mode   = body.get("generation_mode", {"persona": True, "reports": True, "summary": True})
     documents_content = body.get("documents", [])   # [{title_hint, content_html}]
@@ -845,6 +856,10 @@ def api_generate_all():
     if not normalized:
         return jsonify({"error": "patients payload is empty"}), 400
 
+    active_patients = [p["patient_id"] for p in normalized if is_patient_active(p["patient_id"])]
+    if active_patients:
+        return jsonify({"error": f"Jobs are already active for patients: {', '.join(active_patients)}. Please wait."}), 409
+
     job_id = str(uuid.uuid4())
     with _jobs_lock:
         _jobs[job_id] = {
@@ -854,6 +869,7 @@ def api_generate_all():
             "result": None,
             "changes_summary": None,
             "patient_id": "BATCH",
+            "batch_patients": [p["patient_id"] for p in normalized],
             "created_at": datetime.now().isoformat(),
             "request_context": {
                 "feedback": body.get("feedback", ""),
@@ -952,21 +968,31 @@ def api_output(patient_id: str):
         description: Files array
     """
     files = []
+    patient_name = patient_db.get_patient_name(patient_id)
 
-    root_folder = get_patient_report_folder(patient_id)
-    if os.path.exists(root_folder):
-        for f in sorted(os.listdir(root_folder)):
+    # Scan for Persona and Reports in patient-specific folder
+    report_folder = get_patient_report_folder(patient_id, patient_name)
+    if os.path.exists(report_folder):
+        for f in sorted(os.listdir(report_folder)):
             if not f.endswith(".pdf"):
                 continue
-            full_path = os.path.join(root_folder, f)
+            full_path = os.path.join(report_folder, f)
             if not os.path.isfile(full_path):
                 continue
+
             if f.startswith(f"DOC-{patient_id}-"):
                 files.append({"type": "report", "name": f, "path": full_path})
             elif "-persona" in f and f.startswith(f"{patient_id}-"):
                 files.append({"type": "persona", "name": f, "path": full_path})
-            elif f.startswith(f"Clinical_Summary_Patient_{patient_id}"):
-                files.append({"type": "summary", "name": f, "path": full_path})
+
+    # Scan for Summaries in the shared summary folder
+    summary_folder = get_patient_summary_folder(patient_id)
+    if os.path.exists(summary_folder):
+        for f in sorted(os.listdir(summary_folder)):
+            if f.startswith(f"Clinical_Summary_Patient_{patient_id}") and f.endswith(".pdf"):
+                full_path = os.path.join(summary_folder, f)
+                if os.path.isfile(full_path):
+                    files.append({"type": "summary", "name": f, "path": full_path})
 
     return jsonify({"patient_id": patient_id, "files": files})
 

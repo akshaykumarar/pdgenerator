@@ -164,12 +164,28 @@ Human verification guide containing:
 
 ### ConciseSummary
 
-A concise, bulleted summary with highlighted keywords for quick review, containing:
+A concise clinical summary structured into 5 parts:
+* **Test Case and Overview**: Profile basics + case overview.
+* **Details from Extraction**: Insurance details + CPT/ICD/Encounter expectations.
+* **Likelihood without Documents**: Baseline PA probability estimation prior to reports.
+* **Likelihood PA Score Change**: Impact trajectory when evaluating individual uploaded reports.
+* **Overall Summary & Pointers**: Final case summary and verification milestones.
 
-* Patient Profile and Case Explanation
-* Extraction Expectation
-* Document Purpose and Gaps
-* Overall Expectation and Gaps
+---
+
+# Concurrency & Locking
+
+1. **Parallel Execution**: Multiple threads can run `process_patient_workflow` simultaneously.
+2. **Patient Lock**: Only one job per `patient_id` can be active at a time.
+3. **Thread-Safe Logging**: Use `ThreadSafeStdout` to map prints to `job_id`.
+
+# Versioning Rules (vMajor.Minor)
+
+1. **Generation involving Persona**: Bumps Major version (`vX.0`).
+2. **Generation without Persona**: Bumps Minor version (`vX.n`).
+3. **Filenames**: Files must use the version string (e.g., `DOC-225-v3.1-001.pdf`).
+4. **Max Major Resolution**: Scan existing files for max integer before incrementing.
+5. **Max Minor Resolution**: Scan existing files matching the current Major version for max decimal before incrementing.
 
 ---
 

@@ -343,16 +343,7 @@
           <label class="flex items-center gap-1.5 text-xs cursor-pointer"><input type="checkbox" id="chk-reports" checked class="lg-chk"> Reports</label>
           <label class="flex items-center gap-1.5 text-xs cursor-pointer"><input type="checkbox" id="chk-summary" checked class="lg-chk"> Summary</label>
         </div>
-        <div class="mt-2 text-xs">
-          <label class="flex items-center gap-1.5 cursor-pointer text-gray-700 font-semibold selection:bg-none">
-            <input type="checkbox" id="chk-rejection-docs" class="lg-chk" onchange="document.getElementById('rejection-gaps-container').classList.toggle('hidden', !this.checked)"> 
-            Generate Rejection / Denial Gaps
-          </label>
-          <div id="rejection-gaps-container" class="mt-2 hidden">
-            <textarea id="rejection-gaps-input" rows="2" placeholder="Specific missing criteria / gaps (leave blank for defaults)…"
-              class="w-full border border-gray-200 rounded text-xs px-3 py-2 font-mono resize-none focus:ring-1 focus:ring-gray-900 focus:outline-none leading-relaxed placeholder-gray-400 bg-red-50"></textarea>
-          </div>
-        </div>
+
         <button id="btn-generate" onclick="onGenerateClick()"
           class="w-full py-2.5 bg-gray-900 text-white text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-gray-700 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed rounded">
           <span id="gen-icon" class="material-symbols-outlined text-sm"
@@ -473,7 +464,7 @@
             Summary</label>
           <label class="flex items-center gap-2"><input type="checkbox" id="purge-logs" checked class="lg-chk">
             Logs</label>
-          <label class="flex items-center gap-2"><input type="checkbox" id="purge-db" checked class="lg-chk"> Patient
+          <label class="flex items-center gap-2"><input type="checkbox" id="purge-db" class="lg-chk"> Patient
             DB</label>
           <label class="flex items-center gap-2"><input type="checkbox" id="purge-records" class="lg-chk">
             Records</label>
@@ -592,6 +583,9 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       checkServer(); loadPatients();
+      if ('Notification' in window) {
+        Notification.requestPermission();
+      }
       document.getElementById('patient-select').addEventListener('change', onPatientChange);
       document.getElementById('info-provider-mode')?.addEventListener('change', () => {
         if (currentPatientData) updateProviderDisplay(currentPatientData);
@@ -609,7 +603,7 @@
         if (planSelect) {
           populatePlanOptions(planSelect, provider, planTypeSelect?.value, null);
         }
-        saveInsuranceSelection();
+        saveInsuranceSelection().catch(() => {});
       });
       document.getElementById('insurance-plan-type-select')?.addEventListener('change', () => {
         const providerId = document.getElementById('insurance-provider-select').value;
@@ -617,10 +611,10 @@
         const planSelect = document.getElementById('insurance-plan-select');
         const planType = document.getElementById('insurance-plan-type-select').value;
         if (planSelect) populatePlanOptions(planSelect, provider, planType, null);
-        saveInsuranceSelection();
+        saveInsuranceSelection().catch(() => {});
       });
       document.getElementById('insurance-plan-select')?.addEventListener('change', () => {
-        saveInsuranceSelection();
+        saveInsuranceSelection().catch(() => {});
       });
       document.getElementById('insurance-clear-btn')?.addEventListener('click', (e) => {
         e.preventDefault();
@@ -628,6 +622,11 @@
       });
       document.getElementById('batch-modal').addEventListener('click', function (e) { if (e.target === this) closeBatchModal(); });
       document.getElementById('purge-modal').addEventListener('click', function (e) { if (e.target === this) closePurgeModal(); });
+      ['persona', 'reports', 'summary'].forEach(type => {
+        document.getElementById(`chk-batch-${type}`)?.addEventListener('change', (e) => {
+          document.querySelectorAll(`.batch-${type}`).forEach(chk => chk.checked = e.target.checked);
+        });
+      });
     });
 
     function setOnlineState(isOnline) {
@@ -777,29 +776,33 @@
         plan_type: planTypeSelect.value,
         plan_id: planSelect.value
       };
-      try {
-        await fetch(`${API}/api/patient/${currentPatientId}/insurance`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-        // Update identity display immediately without full reload
-        const provider = getProviderById(body.provider_id);
-        const plan = getPlanById(provider, body.plan_id) || resolveDefaultPlan(provider, body.plan_type);
-        if (currentPatientData) {
-          currentPatientData.payer = {
-            payer_id: provider?.provider_id || 'UNKNOWN',
-            payer_name: provider?.name || 'Unknown',
-            plan_name: plan?.plan_name || 'Unknown Plan',
-            plan_type: plan?.plan_type || body.plan_type || 'Unknown',
-            plan_id: plan?.plan_id || body.plan_id || '',
-            provider_abbreviation: provider?.abbreviation || '',
-            provider_policy_url: provider?.policy_url || '',
-            plan_policy_url: plan?.policy_url || ''
-          };
-          updateProviderDisplay(currentPatientData);
-        }
-      } catch (_) {}
+      const resp = await fetch(`${API}/api/patient/${currentPatientId}/insurance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!resp.ok) {
+        let msg = 'Insurance save failed';
+        try { const j = await resp.json(); msg = j.error || msg; } catch (_) {}
+        throw new Error(msg);
+      }
+
+      // Update identity display immediately without full reload
+      const provider = getProviderById(body.provider_id);
+      const plan = getPlanById(provider, body.plan_id) || resolveDefaultPlan(provider, body.plan_type);
+      if (currentPatientData) {
+        currentPatientData.payer = {
+          payer_id: provider?.provider_id || 'UNKNOWN',
+          payer_name: provider?.name || 'Unknown',
+          plan_name: plan?.plan_name || 'Unknown Plan',
+          plan_type: plan?.plan_type || body.plan_type || 'Unknown',
+          plan_id: plan?.plan_id || body.plan_id || '',
+          provider_abbreviation: provider?.abbreviation || '',
+          provider_policy_url: provider?.policy_url || '',
+          plan_policy_url: plan?.policy_url || ''
+        };
+        updateProviderDisplay(currentPatientData);
+      }
     }
 
     async function clearInsuranceSelection() {
@@ -861,11 +864,7 @@
       outCard.style.cssText = isApproval ? 'background:#f0fdf4;border-color:#86efac;' : isDenial ? 'background:#fef2f2;border-color:#fca5a5;' : 'background:#f9fafb;border-color:#e5e7eb;';
       outEl.style.color = isApproval ? '#15803d' : isDenial ? '#dc2626' : '#1a1a1a';
       document.getElementById('case-details-text').textContent = c.details || '—';
-      const chkRejection = document.getElementById('chk-rejection-docs');
-      if (chkRejection) {
-        chkRejection.checked = isDenial || (c.outcome || '').toLowerCase().includes('rejection');
-        document.getElementById('rejection-gaps-container').classList.toggle('hidden', !chkRejection.checked);
-      }
+
     }
 
     function clearDossier() {
@@ -903,7 +902,8 @@
       if (document.getElementById('purge-debug').checked) targets.push('debug');
       if (!targets.length) { alert('Select at least one item to purge.'); return; }
       const mode = document.querySelector('input[name=\"purge-mode\"]:checked')?.value || 'delete';
-      const ok = confirm(`Permanently ${mode} selected data for Patient ${currentPatientId}? The test case remains.`);
+      const extra = targets.includes('db') ? '\\n\\nNote: Purging Patient DB will also clear the saved insurance selection for this patient.' : '';
+      const ok = confirm(`Permanently ${mode} selected data for Patient ${currentPatientId}? The test case remains.${extra}`);
       if (!ok) return;
       try {
         appendLog(`🗑️ Purging patient ${currentPatientId} (${mode})…`);
@@ -1044,17 +1044,24 @@
       document.getElementById('log-dot').style.background = '#3b82f6';
 
       try {
+        await saveInsuranceSelection();
         const body = {
           patient_id: currentPatientId, feedback: document.getElementById('feedback-input').value,
           generation_mode: { persona: document.getElementById('chk-persona').checked, reports: document.getElementById('chk-reports').checked, summary: document.getElementById('chk-summary').checked },
-          generate_rejection_docs: document.getElementById('chk-rejection-docs')?.checked || false,
-          rejection_gaps: document.getElementById('rejection-gaps-input')?.value || '',
+
         };
         const r = await fetch(`${API}/api/generate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const d = await r.json(); currentJobId = d.job_id; logOffset = 0;
         appendLog('📋 Job: ' + currentJobId);
         pollTimer = setInterval(() => pollJob(currentJobId), 2000);
       } catch (e) { appendLog('❌ ' + e.message); resetGenerateBtn(); }
+    }
+
+    function showNotification(title, body, icon = 'clinical_notes') {
+      if (!('Notification' in window) || Notification.permission !== 'granted') {
+        return;
+      }
+      new Notification(title, { body, icon: 'https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/clinical_notes/default/48px.svg' });
     }
 
     async function pollJob(jobId) {
@@ -1064,7 +1071,14 @@
         if (d.status === 'done' || d.status === 'error' || d.status === 'cancelled') {
           clearInterval(pollTimer); pollTimer = null; resetGenerateBtn();
           document.getElementById('log-dot').style.background = d.status === 'done' ? '#16a34a' : '#ef4444';
-          if (d.status === 'done') loadDocuments(currentPatientId);
+          if (d.status === 'done') {
+            showNotification('Generation Complete', `Successfully generated documents for patient ${d.patient_id}.`);
+            loadDocuments(currentPatientId);
+          } else if (d.status === 'error') {
+            showNotification('Generation Failed', `An error occurred while generating documents for patient ${d.patient_id}.`);
+          } else if (d.status === 'cancelled') {
+            showNotification('Generation Cancelled', `The generation job for patient ${d.patient_id} was cancelled.`);
+          }
         }
       } catch (_) { }
     }
@@ -1135,8 +1149,7 @@
       return {
         patient_id: currentPatientId,
         feedback: document.getElementById('feedback-input').value,
-        generate_rejection_docs: document.getElementById('chk-rejection-docs')?.checked || false,
-        rejection_gaps: document.getElementById('rejection-gaps-input')?.value || '',
+
         generation_mode: {
           persona: document.getElementById('chk-persona').checked,
           reports: document.getElementById('chk-reports').checked,

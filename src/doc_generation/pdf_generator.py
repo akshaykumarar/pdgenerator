@@ -23,6 +23,112 @@ _REPORT_META_SKIP_KEYS = {
     "title_hint",
 }
 
+def _as_dict_content(content):
+    if isinstance(content, dict):
+        return content
+    if isinstance(content, str):
+        try:
+            parsed = json.loads(content)
+            return parsed if isinstance(parsed, dict) else None
+        except Exception:
+            return None
+    return None
+
+
+def _extract_report_date_hint(content) -> str:
+    data = _as_dict_content(content) or {}
+    for k in ("service_date", "report_date", "study_date", "performed_date", "date"):
+        v = data.get(k)
+        if v:
+            return str(v).strip()
+    return ""
+
+
+def _shorten(text: str, max_chars: int) -> str:
+    t = (text or "").strip()
+    if len(t) <= max_chars:
+        return t
+    return (t[: max(0, max_chars - 1)].rstrip() + "…") if max_chars > 1 else "…"
+
+
+def _extract_report_highlights(content, max_bullets: int = 4, max_chars: int = 160) -> list[str]:
+    data = _as_dict_content(content)
+    if not isinstance(data, dict):
+        # fall back to plain text, but keep it very short
+        if isinstance(content, str) and content.strip():
+            return [_shorten(content.strip().replace("\n", " "), max_chars)]
+        return []
+
+    highlights: list[str] = []
+
+    def _push(val):
+        if val is None:
+            return
+        if isinstance(val, str):
+            s = val.strip().replace("\n", " ")
+            if s:
+                highlights.append(_shorten(s, max_chars))
+        elif isinstance(val, list):
+            parts = []
+            for item in val[:2]:
+                if isinstance(item, str) and item.strip():
+                    parts.append(item.strip())
+                elif isinstance(item, dict):
+                    parts.append(json.dumps(item)[:max_chars])
+            if parts:
+                highlights.append(_shorten("; ".join(parts), max_chars))
+        elif isinstance(val, dict):
+            # pick a couple of key fields if present
+            for kk in ("impression", "findings", "results", "assessment", "plan", "summary", "conclusion"):
+                if kk in val and val[kk]:
+                    _push(val[kk])
+                    break
+
+    # Prefer clinically meaningful fields
+    for key in (
+        "impression",
+        "findings",
+        "results",
+        "assessment",
+        "plan",
+        "interpretation",
+        "clinical_indication",
+        "chief_complaint",
+        "summary",
+        "conclusion",
+    ):
+        if key in data and data.get(key):
+            _push(data.get(key))
+        if len(highlights) >= max_bullets:
+            break
+
+    # If template uses sections, pull from first 1–2 populated sections
+    if len(highlights) < max_bullets:
+        sections = data.get("sections") or []
+        if isinstance(sections, list):
+            for sec in sections[:4]:
+                if not sec:
+                    continue
+                val = data.get(sec)
+                if val:
+                    _push(val)
+                if len(highlights) >= max_bullets:
+                    break
+
+    # Dedupe while preserving order
+    seen = set()
+    out = []
+    for h in highlights:
+        key = h.strip().lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        out.append(h)
+        if len(out) >= max_bullets:
+            break
+    return out
+
+
 def _ensure_folder(path: str):
     if not os.path.exists(path):
         os.makedirs(path, exist_ok=True)
@@ -125,7 +231,6 @@ def _sanitize_filename(name: str) -> str:
     name = re.sub(r"\s+", " ", name).strip()
     return name
 
-
 def _clean_doc_title(title_hint: str, doc_type_fallback: str = "") -> str:
     """Clean AI-generated title hints into proper clinical report titles."""
     raw = title_hint or doc_type_fallback or "Clinical Report"
@@ -139,7 +244,6 @@ def _clean_doc_title(title_hint: str, doc_type_fallback: str = "") -> str:
         '', raw, flags=re.IGNORECASE
     )
     return raw.strip().title()
-
 
 def _parse_formatted_sections(content_str: str) -> list:
     """
@@ -163,7 +267,6 @@ def _parse_formatted_sections(content_str: str) -> list:
         if body:
             sections.append((label, body))
     return sections if sections else [(None, content_str)]
-
 
 def _extract_report_metadata(content: str) -> dict:
     """
@@ -190,8 +293,7 @@ def _extract_report_metadata(content: str) -> dict:
         metadata[key.strip().lower()] = val.strip()
     return metadata
 
-
-def create_patient_pdf(patient_id: str, doc_type: str, content: str, patient_persona=None, doc_metadata=None, base_output_folder: str = None, image_path: str = None, version: int = 1):
+def create_patient_pdf(patient_id: str, doc_type: str, content: str, patient_persona=None, doc_metadata=None, base_output_folder: str = None, image_path: str = None, version: str = "1"):
     patient_folder = base_output_folder or "documents"
     _ensure_folder(patient_folder)
 
@@ -329,7 +431,7 @@ def create_patient_pdf(patient_id: str, doc_type: str, content: str, patient_per
 def get_clinical_image(doc_title: str):
     return None
 
-def create_concise_summary_pdf(patient_id: str, concise_summary, case_details: dict, patient_persona=None, output_folder: str = None, version: int = 1):
+def create_concise_summary_pdf(patient_id: str, concise_summary, case_details: dict, patient_persona=None, output_folder: str = None, version: str = "1"):
     if output_folder is None:
         from ..core.config import OUTPUT_DIR
         output_folder = os.path.join(OUTPUT_DIR, "summary")
@@ -338,97 +440,145 @@ def create_concise_summary_pdf(patient_id: str, concise_summary, case_details: d
 
     output_path = os.path.join(output_folder, f"Clinical_Summary_Patient_{patient_id}-v{version}.pdf")
     file_path = output_path
-    
+
     if os.path.exists(file_path):
         try:
             os.remove(file_path)
             print(f"      🔄 Replaced existing summary")
         except Exception as e:
             print(f"      ⚠️  Could not remove old summary: {e}")
-    
+
     doc = SimpleDocTemplate(file_path, pagesize=letter,
                             rightMargin=50, leftMargin=50,
                             topMargin=50, bottomMargin=50)
 
     styles = getSampleStyleSheet()
-    
+
     col_primary = colors.HexColor("#2c3e50")
     col_secondary = colors.HexColor("#e74c3c")
-    col_success = colors.HexColor("#27ae60")
-    col_warning = colors.HexColor("#f39c12")
     col_light_bg = colors.HexColor("#ecf0f1")
-    
-    style_title = ParagraphStyle("ann_MainTitle", parent=styles["Heading1"], 
+
+    style_title = ParagraphStyle("ann_MainTitle", parent=styles["Heading1"],
                                 textColor=col_primary, fontSize=20, alignment=1,
                                 spaceAfter=10, spaceBefore=0)
-    
+
     style_subtitle = ParagraphStyle("ann_SubTitle", parent=styles["Normal"],
                                    textColor=col_secondary, fontSize=12, alignment=1,
                                    fontName="Helvetica-Bold", spaceAfter=20)
-    
-    style_h2 = ParagraphStyle("ann_SecTitle", parent=styles["Heading2"], 
+
+    style_h2 = ParagraphStyle("ann_SecTitle", parent=styles["Heading2"],
                              textColor=col_primary, backColor=col_light_bg,
                              borderPadding=8, borderLeftWidth=4, borderColor=col_secondary,
                              spaceBefore=15, spaceAfter=10)
-    
-    style_h3 = ParagraphStyle("ann_SubSecTitle", parent=styles["Heading3"],
-                             textColor=col_secondary, spaceBefore=10, spaceAfter=5)
-    
-    style_normal = ParagraphStyle("ann_Body", parent=styles["Normal"], 
+
+    style_normal = ParagraphStyle("ann_Body", parent=styles["Normal"],
                                  leading=14, fontSize=10, spaceAfter=6)
-    
-    style_bullet = ParagraphStyle("ann_Bullet", parent=style_normal, 
+
+    style_bullet = ParagraphStyle("ann_Bullet", parent=style_normal,
                                  leftIndent=20, bulletIndent=10)
-    
+
     Story = []
 
-    Story.append(Paragraph("Concise Clinical Summary", style_title))
+    Story.append(Paragraph("Structured Clinical Summary", style_title))
     Story.append(Paragraph(f"Patient ID: {patient_id}", style_subtitle))
     Story.append(Spacer(1, 10))
 
     summary = concise_summary
 
-    # 1. Patient Profile and Case Explanation
-    Story.append(Paragraph("1. Patient Profile and Case Explanation", style_h2))
-    Story.append(Paragraph(f"• <b>Patient Details:</b> {summary.patient_profile_and_case_explanation.patient_details}", style_bullet))
-    Story.append(Paragraph(f"• <b>Case Explanation:</b> {summary.patient_profile_and_case_explanation.case_explanation}", style_bullet))
-    Story.append(Paragraph(f"• <b>CPT Codes:</b> {summary.patient_profile_and_case_explanation.cpt_codes}", style_bullet))
-    Story.append(Paragraph(f"• <b>ICD Codes:</b> {summary.patient_profile_and_case_explanation.icd_codes}", style_bullet))
+    # 1. Test case and overview
+    Story.append(Paragraph("1. Test Case and Overview", style_h2))
+    Story.append(Paragraph(format_clinical_text(summary.test_case_and_overview), style_normal))
     Story.append(Spacer(1, 10))
 
-    # 2. Extraction Expectation
-    Story.append(Paragraph("2. Extraction Expectation", style_h2))
-    Story.append(Paragraph(f"• <b>Insurance Provider:</b> {summary.extraction_expectation.insurance_provider}", style_bullet))
-    Story.append(Paragraph(f"• <b>CPT:</b> {summary.extraction_expectation.cpt}", style_bullet))
-    Story.append(Paragraph(f"• <b>ICD:</b> {summary.extraction_expectation.icd}", style_bullet))
-    Story.append(Paragraph(f"• <b>Encounters:</b> {summary.extraction_expectation.encounters}", style_bullet))
+    # 2. Details from extraction
+    Story.append(Paragraph("2. Details from Extraction", style_h2))
+    if summary.details_from_extraction:
+        for item in summary.details_from_extraction:
+            Story.append(Paragraph(f"• {format_clinical_text(item)}", style_bullet))
     Story.append(Spacer(1, 10))
 
-    # 3. Document Purpose and Gaps
-    Story.append(Paragraph("3. Document Purpose and Gaps", style_h2))
-    Story.append(Paragraph(f"• <b>Document Purpose:</b> {summary.document_purpose_and_gaps.document_purpose}", style_bullet))
-    Story.append(Paragraph(f"• <b>Purpose Gap:</b> {summary.document_purpose_and_gaps.purpose_gap}", style_bullet))
-    Story.append(Paragraph(f"• <b>Information Gap:</b> {summary.document_purpose_and_gaps.information_gap}", style_bullet))
+    # 3. Likelihood without documents
+    Story.append(Paragraph("3. Likelihood/PA Probability (Without Supporting Documents)", style_h2))
+    Story.append(Paragraph(format_clinical_text(summary.likelihood_without_documents), style_normal))
     Story.append(Spacer(1, 10))
 
-    # 4. Overall Expectation and Gaps
-    Story.append(Paragraph("4. Overall Expectation and Gaps", style_h2))
-    Story.append(Paragraph(f"• <b>Overall Expectation:</b> {summary.overall_expectation_and_gaps.overall_expectation}", style_bullet))
-    Story.append(Paragraph(f"• <b>Overall Gaps:</b> {summary.overall_expectation_and_gaps.overall_gaps}", style_bullet))
+    # 4. Likelihood change with documents
+    Story.append(Paragraph("4. Likelihood PA Score Change (Considering Each Document)", style_h2))
+    if summary.likelihood_change_with_documents:
+        for item in summary.likelihood_change_with_documents:
+            Story.append(Paragraph(f"• {format_clinical_text(item)}", style_bullet))
+    else:
+        Story.append(Paragraph("None identified.", style_normal))
     Story.append(Spacer(1, 10))
+
+    # 5. List of attachments
+    Story.append(Paragraph("5. List of Attachments (What + Why)", style_h2))
+    attachments_list = getattr(summary, "attachments_list", None)
+    if attachments_list:
+        for item in attachments_list:
+            Story.append(Paragraph(f"• {format_clinical_text(item)}", style_bullet))
+    else:
+        Story.append(Paragraph("None identified.", style_normal))
+    Story.append(Spacer(1, 10))
+
+    # 6. Likelihood expectations post all attachments
+    Story.append(Paragraph("6. Likelihood Expectations (Post All Attachments)", style_h2))
+    post_param = getattr(summary, "likelihood_expectations_post_attachments", None)
+    if post_param:
+        Story.append(Paragraph("<b>Correct responses:</b>", style_normal))
+        if getattr(post_param, "correct_items", None):
+            for item in post_param.correct_items:
+                Story.append(Paragraph(f"• {format_clinical_text(item)}", style_bullet))
+        else:
+            Story.append(Paragraph("None.", style_bullet))
+        Story.append(Spacer(1, 5))
+        Story.append(Paragraph("<b><font color='red'>Gaps:</font></b>", style_normal))
+        if getattr(post_param, "gaps_and_issues", None):
+            for item in post_param.gaps_and_issues:
+                Story.append(Paragraph(f"• {format_clinical_text(item)}", style_bullet))
+        else:
+            Story.append(Paragraph("None.", style_bullet))
+    else:
+        Story.append(Paragraph("None identified.", style_normal))
+    Story.append(Spacer(1, 10))
+
+    def add_verification_section(title, param, idx):
+        Story.append(Paragraph(f"{idx}. {title}", style_h2))
+        if param:
+            Story.append(Paragraph("<b>Correct Items:</b>", style_normal))
+            if param.correct_items:
+                for item in param.correct_items:
+                    Story.append(Paragraph(f"• {format_clinical_text(item)}", style_bullet))
+            else:
+                Story.append(Paragraph("None.", style_bullet))
+            Story.append(Spacer(1, 5))
+            Story.append(Paragraph("<b><font color='red'>Gaps/Issues:</font></b>", style_normal))
+            if param.gaps_and_issues:
+                for item in param.gaps_and_issues:
+                    Story.append(Paragraph(f"• {format_clinical_text(item)}", style_bullet))
+            else:
+                Story.append(Paragraph("None.", style_bullet))
+        else:
+            Story.append(Paragraph("None.", style_normal))
+        Story.append(Spacer(1, 10))
+
+    add_verification_section("Medical Necessity", getattr(summary, "medical_necessity", None), 7)
+    add_verification_section("Policy Compliance", getattr(summary, "policy_compliance", None), 8)
+    add_verification_section("Documentation Quality", getattr(summary, "documentation_quality", None), 9)
+    add_verification_section("Clinical Timeline Strength", getattr(summary, "clinical_timeline_strength", None), 10)
 
     doc.build(Story)
     return file_path
 
 
-def create_annotator_summary_pdf(patient_id: str, annotator_summary, case_details: dict, patient_persona=None, output_folder: str = None, version: int = 1):
+def create_annotator_summary_pdf(patient_id: str, annotator_summary, case_details: dict, patient_persona=None, output_folder: str = None, version: str = "1"):
     if output_folder is None:
         from ..core.config import OUTPUT_DIR
         output_folder = os.path.join(OUTPUT_DIR, "summary")
 
     os.makedirs(output_folder, exist_ok=True)
 
-    output_path = os.path.join(output_folder, f"Clinical_Summary_Patient_{patient_id}-v{version}.pdf")
+    output_path = os.path.join(output_folder, f"Annotator_Summary_Patient_{patient_id}-v{version}.pdf")
     file_path = output_path
     
     if os.path.exists(file_path):
@@ -695,7 +845,7 @@ def create_annotator_summary_pdf(patient_id: str, annotator_summary, case_detail
     
     Story.append(Spacer(1, 15))
     
-    footer_text = f"<i>Generated: {datetime.now().strftime("%m-%d-%Y %H:%M")} | This document is for internal QA purposes only</i>"
+    footer_text = f"<i>Generated: {datetime.now().strftime('%m-%d-%Y %H:%M')} | This document is for internal QA purposes only</i>"
     Story.append(Paragraph(footer_text, 
                           ParagraphStyle("ann_footer", parent=style_normal, 
                                         fontSize=8, textColor=colors.grey, alignment=1)))
@@ -915,7 +1065,7 @@ def create_patient_summary_pdf(patient_id, summary_data, output_folder: str = No
     doc.build(Story)
     return file_path
 
-def create_persona_pdf(patient_id: str, patient_name: str, persona: object, generated_reports: list = None, image_map: dict = None, mrn: str = "N/A", output_folder: str = "documents/personas", version: int = 1):
+def create_persona_pdf(patient_id: str, patient_name: str, persona: object, generated_reports: list = None, image_map: dict = None, mrn: str = "N/A", output_folder: str = "documents/personas", version: str = "1"):
     """
     Generates a comprehensive Patient Master Record from Structured Data.
     - **Header**: Official Record Title.
@@ -1210,7 +1360,7 @@ def create_persona_pdf(patient_id: str, patient_name: str, persona: object, gene
 
         # 4. Therapies (expanded — CPT codes + ICD-10)
         if therapies_list:
-            Story.append(Paragraph("<b>Therapy &amp; Behavioral Health</b>", style_h3))
+            Story.append(Paragraph("<b>Therapy & Behavioral Health</b>", style_h3))
             Story.append(Spacer(1, 5))
             th_data = [["Type", "CPT Code", "Provider / Facility", "Frequency / Status", "ICD-10 Diagnoses"]]
             for th in therapies_list:
@@ -1237,7 +1387,7 @@ def create_persona_pdf(patient_id: str, patient_name: str, persona: object, gene
         # 5. Social History
         sh = getattr(p, 'social_history', None)
         if sh:
-            Story.append(Paragraph("<b>Social &amp; Lifestyle History</b>", style_h3))
+            Story.append(Paragraph("<b>Social & Lifestyle History</b>", style_h3))
             Story.append(Spacer(1, 5))
             sh_data = [
                 ["Tobacco Use", getattr(sh, 'tobacco_use', None) or "(not recorded)"],
@@ -1341,45 +1491,28 @@ def create_persona_pdf(patient_id: str, patient_name: str, persona: object, gene
 
     # --- REPORTS & IMAGING ---
     if generated_reports:
-        # ... (Same as before)
+        # Compact index + highlights (persona should stay concise; full PDFs contain details)
+        max_items = int(os.getenv("PERSONA_SECTION3_MAX_ITEMS", "6") or "6")
+        max_bullets = int(os.getenv("PERSONA_SECTION3_MAX_BULLETS", "4") or "4")
+        max_chars = int(os.getenv("PERSONA_SECTION3_BULLET_CHARS", "160") or "160")
+
         Story.append(Paragraph("III. CLINICAL REPORTS & IMAGING", style_h2))
-        
-        for rep in generated_reports:
-            # Report Title
+        Story.append(Paragraph("Full report PDFs contain complete details. Key findings are summarized below.", style_normal))
+        Story.append(Spacer(1, 10))
+
+        for rep in (generated_reports or [])[:max_items]:
             rep_title = rep.title_hint.replace('_', ' ').upper()
-            Story.append(Paragraph(f"► {rep_title}", style_h3))
-            
-            # Check Image
-            img_path = None
-            if image_map:
-                for k, v in image_map.items():
-                    if k.startswith(rep.title_hint):
-                        img_path = v
-                        break
-            
-            if img_path and os.path.exists(img_path):
-                 img = Image(img_path, width=3.5*inch, height=2*inch, kind='proportional')
-                 Story.append(img)
-                 Story.append(Spacer(1, 5))
-            
-            # Content
-            
-            # Format markdown to styled text with graceful fallback
-            rep_text = format_report_content(rep.content)
-            
-            try:
-                Story.append(Paragraph(rep_text, style_normal))
-            except ValueError:
-                import html
-                safe_text = html.escape(rep.content).replace('\n', '<br/>')
-                Story.append(Paragraph(safe_text, style_normal))
-            
-            Story.append(Spacer(1, 15))
-            Story.append(Spacer(1,6))
-            Story.append(Table([[""]], colWidths=[6.4*inch], style=[
-                ('LINEABOVE',(0,0),(-1,-1),0.5,colors.grey)
-            ]))
-            Story.append(Spacer(1,6))
+            rep_date = _extract_report_date_hint(getattr(rep, "content", None))
+            rep_header = f"► {rep_title}" + (f"  ({rep_date})" if rep_date else "")
+            Story.append(Paragraph(rep_header, style_h3))
+
+            bullets = _extract_report_highlights(getattr(rep, "content", None), max_bullets=max_bullets, max_chars=max_chars)
+            if not bullets:
+                bullets = ["See report PDF for details."]
+            for b in bullets:
+                Story.append(Paragraph(f"• {html.escape(str(b))}", ParagraphStyle('persona_bull_s3', parent=style_normal, leftIndent=15)))
+
+            Story.append(Spacer(1, 10))
 
     doc.build(Story)
     return file_path

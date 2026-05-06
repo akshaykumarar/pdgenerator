@@ -11,12 +11,11 @@ from ..core.config import (
     get_patient_archive_folder,
 )
 
-def get_persona_version(patient_id: str) -> int:
+def get_latest_major_version(patient_id: str) -> int:
     """
     Scan the document directories for existing files for this patient.
-    Uses os.walk to check active AND archived folders to find the absolute max version.
-    Returns the *next* version number (e.g. if v2 exists → returns 3).
-    Returns 1 when no prior versions exist.
+    Gets the current absolute max version.
+    Returns 0 when no prior versions exist.
     """
     max_v = 0
     
@@ -24,6 +23,8 @@ def get_persona_version(patient_id: str) -> int:
         f"{patient_id}-",
         f"DOC-{patient_id}-",
         f"Clinical_Summary_Patient_{patient_id}",
+        f"Annotator_Summary_Patient_{patient_id}",
+        f"Concise_Summary_Patient_{patient_id}",
     ]
     
     dirs_to_check = [
@@ -40,7 +41,38 @@ def get_persona_version(patient_id: str) -> int:
                         if m:
                             max_v = max(max_v, int(m.group(1)))
                             
-    return max_v + 1
+    return max_v
+
+def get_document_minor_version(patient_id: str, major_version: int) -> int:
+    """
+    Scan for the next minor version of documents under a specific major version.
+    Returns 1 if no minor versions exist yet (so the first update is v2.1).
+    """
+    max_minor = 0
+    
+    prefix_patterns = [
+        f"DOC-{patient_id}-",
+        f"Clinical_Summary_Patient_{patient_id}",
+        f"Annotator_Summary_Patient_{patient_id}",
+        f"Concise_Summary_Patient_{patient_id}",
+    ]
+    
+    dirs_to_check = [
+        get_patient_report_folder(patient_id),
+        get_patient_summary_folder(patient_id)
+    ]
+    
+    for d in dirs_to_check:
+        if os.path.isdir(d):
+            for root, _, files in os.walk(d):
+                for fname in files:
+                    if fname.endswith(".pdf") and any(fname.startswith(p) for p in prefix_patterns):
+                        # Pattern extracts the minor version e.g. -v2.1 -> 1
+                        m = re.search(rf"-v{major_version}\.(\d+)", fname)
+                        if m:
+                            max_minor = max(max_minor, int(m.group(1)))
+                            
+    return max_minor + 1
 
 
 def _archive_files_in_dir(folder: str, patient_id: str, prefix_patterns: list[str], archive_token: str = None):
@@ -87,6 +119,8 @@ def archive_patient_files(patient_id: str, generation_mode: dict, archive_token:
         prefix_patterns.append(f"DOC-{patient_id}-")
     if generation_mode.get("summary", False):
         prefix_patterns.append(f"Clinical_Summary_Patient_{patient_id}")
+        prefix_patterns.append(f"Annotator_Summary_Patient_{patient_id}")
+        prefix_patterns.append(f"Concise_Summary_Patient_{patient_id}")
 
     if prefix_patterns:
         # 1. Root folder (Persona + Reports)
@@ -114,6 +148,8 @@ def restore_patient_files(patient_id: str, generation_mode: dict, archive_token:
         prefix_patterns.append(f"DOC-{patient_id}-")
     if generation_mode.get("summary", False):
         prefix_patterns.append(f"Clinical_Summary_Patient_{patient_id}")
+        prefix_patterns.append(f"Annotator_Summary_Patient_{patient_id}")
+        prefix_patterns.append(f"Concise_Summary_Patient_{patient_id}")
 
     for fname in os.listdir(folder):
         if fname == "archive" or not fname.endswith(".pdf"):
@@ -134,7 +170,7 @@ def restore_patient_files(patient_id: str, generation_mode: dict, archive_token:
             orig = fname[len(token_prefix):]
             # Try to move back to either report or summary folder depending on filename
             dst_folder = folder
-            if orig.startswith("Clinical_Summary"):
+            if orig.startswith("Clinical_Summary") or orig.startswith("Annotator_Summary") or orig.startswith("Concise_Summary"):
                 dst_folder = get_patient_summary_folder(patient_id)
                 os.makedirs(dst_folder, exist_ok=True)
                 
