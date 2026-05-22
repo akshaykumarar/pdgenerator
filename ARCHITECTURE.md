@@ -45,6 +45,7 @@ graph TD
     end
     subgraph Processing
         API["API Server (api_server.py)"] --> Generator["Workflow Orchestrator (src/workflow.py)"]
+        API --> TrackerExporter["Patient Tracker Exporter (src/doc_generation/patient_tracker_export.py)"]
         Generator --> DataLoader["Case Loader (src/data/loader.py)"]
         Generator --> PatientState["Patient State Builder"]
         PatientState --> AIEngine["AI Engine (src/ai/client.py)"]
@@ -57,6 +58,7 @@ graph TD
     end
     subgraph Output
         PDFFactory --> OutputDir["generated_output/"]
+        TrackerExporter --> OutputDir
     end
     UI --> API
 ```
@@ -268,6 +270,13 @@ Legacy `core/patients_db.json` is automatically migrated into `src/core/patients
 
 Use `compact_patient_data.py` to truncate long patient DB fields and trim per-patient history/feedback logs for smaller context sizes.
 
+### Patient Tracker Exporter (`src/doc_generation/patient_tracker_export.py`)
+
+Handles compiling clinical Prior Authorization patient metrics for a selected subset of patients into unified reports:
+- **Landscape PDF Table**: A beautiful ReportLab-generated horizontal sheet matching a custom theme (`#1A365D` headers with alternating white and light-gray rows). Column widths and cell wrapping (using `Paragraph`) are explicitly calculated to sum to 720 points, fitting perfectly within one landscape Letter page.
+- **Companion TSV File**: A tab-separated file saving the identical data rows for easy copy-pasting or direct import into Microsoft Excel. 
+- **Offline High-Speed Pipeline**: Utilizes cached `concise_summary.json` files generated and persisted during normal document workflows, falling back gracefully to UAT configuration plans and Patient DB records.
+
 ### UI Layer (`ui/`)
 
 | File | Theme | Description |
@@ -301,7 +310,7 @@ pdgenerator/
 │   ├── ai/                      # LLM client, prompts, models, QA, search
 │   ├── core/                    # Config + patient DB + state (patients_db.json)
 │   ├── data/                    # Loader + history + record writers
-│   ├── doc_generation/          # Planner, validator, PDF generation
+│   ├── doc_generation/          # Planner, validator, PDF generation, patient_tracker_export.py
 │   ├── utils/                   # File/date/purge utilities
 │   ├── cli.py                   # CLI entrypoint
 │   └── workflow.py              # Orchestration layer

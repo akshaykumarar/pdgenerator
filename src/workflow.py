@@ -19,8 +19,11 @@ from .core.config import (
     get_patient_report_folder,
     get_patient_persona_folder,
     get_patient_summary_folder,
+    get_patient_records_folder,
+    MAX_SUPPORTING_DOCUMENTS,
 )
 from .utils.file_utils import get_latest_major_version, get_document_minor_version, archive_patient_files, sanitize_filename_component
+
 
 def _is_policy_criteria_doc(doc) -> bool:
     """
@@ -335,6 +338,23 @@ def process_patient_workflow(
         removed = len(documents_all) - len(filtered_documents)
         print(f"   🧹 Removed {removed} payer policy criteria document(s) from output.")
 
+    # Enforce MAX_SUPPORTING_DOCUMENTS cap unless feedback explicitly requests more
+    feedback_lower = str(feedback or "").lower()
+    bypass_cap = bool(
+        re.search(r"generate\s+(\d+|more)\s+doc", feedback_lower) 
+        or "generate more" in feedback_lower 
+        or "generate 6" in feedback_lower 
+        or "generate 7" in feedback_lower 
+        or "generate 8" in feedback_lower 
+        or "generate 9" in feedback_lower 
+        or "generate 10" in feedback_lower
+    )
+    if not bypass_cap:
+        original_count = len(filtered_documents)
+        filtered_documents = filtered_documents[:MAX_SUPPORTING_DOCUMENTS]
+        if len(filtered_documents) < original_count:
+            print(f"   ✂️  Capped supporting documents to {MAX_SUPPORTING_DOCUMENTS} (removed {original_count - len(filtered_documents)} excess).")
+
     # Ensure payer fields reflect patient_state insurance config/selection
     _apply_insurance_overrides(result.patient_persona, patient_state)
 
@@ -616,6 +636,22 @@ def process_patient_workflow(
                 generated_documents=documents_for_summary,
                 search_results=search_results,
             )
+
+            # Save concise summary JSON metadata for patient tracker export
+            try:
+                records_folder = get_patient_records_folder(patient_id, p_full_name)
+                os.makedirs(records_folder, exist_ok=True)
+                json_path = os.path.join(records_folder, "concise_summary.json")
+                if hasattr(concise_summary, "model_dump_json"):
+                    json_str = concise_summary.model_dump_json(indent=2)
+                else:
+                    json_str = json.dumps(concise_summary, indent=2)
+                with open(json_path, "w", encoding="utf-8") as json_f:
+                    json_f.write(json_str)
+                print(f"   💾 Saved concise_summary JSON metadata to {os.path.basename(json_path)}")
+            except Exception as e:
+                print(f"   ⚠️  Could not save concise_summary JSON metadata: {e}")
+
             con_path = pdf_generator.create_concise_summary_pdf(
                 patient_id=patient_id,
                 concise_summary=concise_summary,
@@ -712,7 +748,24 @@ def preview_patient_generation(
 
     # Serialise to plain JSON
     docs_serialised = []
-    for doc in (result.documents or []):
+    docs_all = result.documents or []
+    filtered_docs = [doc for doc in docs_all if not _is_policy_criteria_doc(doc)]
+    
+    # Enforce MAX_SUPPORTING_DOCUMENTS cap unless feedback explicitly requests more
+    feedback_lower = str(feedback or "").lower()
+    bypass_cap = bool(
+        re.search(r"generate\s+(\d+|more)\s+doc", feedback_lower) 
+        or "generate more" in feedback_lower 
+        or "generate 6" in feedback_lower 
+        or "generate 7" in feedback_lower 
+        or "generate 8" in feedback_lower 
+        or "generate 9" in feedback_lower 
+        or "generate 10" in feedback_lower
+    )
+    if not bypass_cap:
+        filtered_docs = filtered_docs[:MAX_SUPPORTING_DOCUMENTS]
+
+    for doc in filtered_docs:
         docs_serialised.append({
             "title_hint": getattr(doc, "title_hint", "Clinical Document"),
             "content": doc.content if isinstance(doc.content, dict) else str(doc.content),
@@ -962,6 +1015,22 @@ def render_patient_pdfs_from_content(
                 generated_documents=None,
                 search_results=None,
             )
+
+            # Save concise summary JSON metadata for patient tracker export
+            try:
+                records_folder = get_patient_records_folder(patient_id, p_full_name)
+                os.makedirs(records_folder, exist_ok=True)
+                json_path = os.path.join(records_folder, "concise_summary.json")
+                if hasattr(concise_summary, "model_dump_json"):
+                    json_str = concise_summary.model_dump_json(indent=2)
+                else:
+                    json_str = json.dumps(concise_summary, indent=2)
+                with open(json_path, "w", encoding="utf-8") as json_f:
+                    json_f.write(json_str)
+                print(f"   💾 Saved concise_summary JSON metadata to {os.path.basename(json_path)}")
+            except Exception as e:
+                print(f"   ⚠️  Could not save concise_summary JSON metadata: {e}")
+
             sum_path = pdf_generator.create_concise_summary_pdf(
                 patient_id=patient_id,
                 concise_summary=concise_summary,

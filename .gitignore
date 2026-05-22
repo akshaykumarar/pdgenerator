@@ -17,8 +17,11 @@ generated_output/
 
 # Secrets
 core/*.json
-core/patients_db.json
+src/core/patients_db.json
 core/UAT Plan.xlsx
 .continue/
 .search_cache/
 .pytest_cache/
+api.log
+
+artifacts/

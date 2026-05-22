@@ -179,6 +179,11 @@
         class="flex items-center gap-1.5 px-3 py-1.5 border border-gray-900 text-[10px] font-black uppercase tracking-widest hover:bg-gray-900 hover:text-white transition-all">
         <span class="material-symbols-outlined text-sm">batch_prediction</span> Batch Run
       </button>
+      <button onclick="openTrackerModal()"
+        class="flex items-center gap-1.5 px-3 py-1.5 border text-[10px] font-black uppercase tracking-widest hover:bg-gray-900 hover:text-white transition-all"
+        style="background: #1A365D; border-color: #1A365D; color: white;">
+        <span class="material-symbols-outlined text-sm">download</span> Tracker Export
+      </button>
       <img alt="User" class="w-7 h-7 rounded-full border border-gray-200 grayscale"
         src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTDu4MOuMOs0W6jTWPV71zpxHjMy44pi5CSqXnvyMi0CthsHHHGye33MnLt-4CABhybyhfOv5AfJZrfS-7__iytpf2mV6buuCUcSEtZgFFrFjJIQL-OBSJLlKWPDN_tuM9ULtNJ1UoDgIlE8tPtApQs_sTUfPKjKHa1J409OwjQSJT5zxsfiLnztGjib9og5dWmAAH6tANmnkuLdbaUO4n6IF_qD3KPp6b3AeFJzchNg-XKLW5S_DtSoNK1nWiZMxn62-mdnM1kTY" />
     </div>
@@ -443,6 +448,44 @@
     </div>
   </div>
 
+  <!-- ═══ TRACKER EXPORT MODAL ════════════════════════════════════════ -->
+  <div id="tracker-modal"
+    class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center">
+    <div class="bg-white border border-gray-200 w-[420px] max-h-[80vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="p-5 border-b border-gray-200 flex justify-between items-center shrink-0">
+        <div>
+          <h2 class="font-black text-sm">Patient Tracker Export</h2>
+          <p class="text-xs text-gray-500 mt-0.5">Select patients to include in the tracker report</p>
+        </div>
+        <button onclick="closeTrackerModal()"><span class="material-symbols-outlined text-gray-500">close</span></button>
+      </div>
+      <div class="p-4 border-b border-gray-100 flex justify-between items-center shrink-0">
+        <span class="text-xs font-bold text-gray-700">Patient List</span>
+        <button onclick="toggleTrackerSelectAll()" class="text-[10px] text-gray-500 underline">Deselect All</button>
+      </div>
+      <div class="flex-1 overflow-y-auto custom-scrollbar p-4">
+        <table class="w-full text-xs border-collapse">
+          <thead>
+            <tr class="text-[9px] text-gray-400 uppercase tracking-wider border-b border-gray-200">
+              <th class="pb-2 text-left font-bold w-10">Select</th>
+              <th class="pb-2 text-left font-bold">Patient ID</th>
+              <th class="pb-2 text-left font-bold">Patient Name</th>
+            </tr>
+          </thead>
+          <tbody id="tracker-patient-rows" class="divide-y divide-gray-100">
+            <tr><td colspan="3" class="py-3 text-gray-400 text-[11px] italic">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="p-4 border-t border-gray-200 flex gap-3 shrink-0">
+        <button onclick="closeTrackerModal()"
+          class="flex-1 py-2 border border-gray-300 text-xs font-bold hover:bg-gray-50 transition-colors">Cancel</button>
+        <button onclick="startTrackerExport()"
+          class="flex-1 py-2 bg-gray-900 text-white text-xs font-black hover:bg-gray-700 transition-colors">Export Selected</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══ PURGE MODAL ══════════════════════════════════════════════════ -->
   <div id="purge-modal"
     class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center">
@@ -578,14 +621,12 @@
   <script>
     const API = 'http://localhost:410';
     let currentPatientId = null, currentPatientData = null, allFiles = [], activeDocTab = 'all', activeClinicalTab = 'meds';
-    let currentJobId = null, pollTimer = null, logOffset = 0, allPatientIds = [], batchSelectAll = true;
+    let currentJobId = null, pollTimer = null, logOffset = 0, allPatientIds = [], batchSelectAll = true, trackerSelectAll = true;
     let insuranceConfig = null;
+    let patientNames = {};
 
     window.addEventListener('DOMContentLoaded', () => {
       checkServer(); loadPatients();
-      if ('Notification' in window) {
-        Notification.requestPermission();
-      }
       document.getElementById('patient-select').addEventListener('change', onPatientChange);
       document.getElementById('info-provider-mode')?.addEventListener('change', () => {
         if (currentPatientData) updateProviderDisplay(currentPatientData);
@@ -621,6 +662,7 @@
         clearInsuranceSelection();
       });
       document.getElementById('batch-modal').addEventListener('click', function (e) { if (e.target === this) closeBatchModal(); });
+      document.getElementById('tracker-modal').addEventListener('click', function (e) { if (e.target === this) closeTrackerModal(); });
       document.getElementById('purge-modal').addEventListener('click', function (e) { if (e.target === this) closePurgeModal(); });
       ['persona', 'reports', 'summary'].forEach(type => {
         document.getElementById(`chk-batch-${type}`)?.addEventListener('change', (e) => {
@@ -659,9 +701,17 @@
     async function loadPatients() {
       try {
         const r = await fetch(`${API}/api/patients`); const d = await r.json();
-        allPatientIds = d.patients || []; const sel = document.getElementById('patient-select');
+        allPatientIds = d.patients || [];
+        patientNames = d.patient_names || {};
+        const sel = document.getElementById('patient-select');
         sel.innerHTML = '<option value="">— Select patient —</option>';
-        allPatientIds.forEach(id => { const o = document.createElement('option'); o.value = id; o.textContent = 'Patient ' + id; sel.appendChild(o); });
+        allPatientIds.forEach(id => {
+          const o = document.createElement('option');
+          o.value = id;
+          const name = patientNames[id] || ('Patient ' + id);
+          o.textContent = id + ' - ' + name;
+          sel.appendChild(o);
+        });
       } catch (e) { console.error(e); }
     }
 
@@ -1057,13 +1107,6 @@
       } catch (e) { appendLog('❌ ' + e.message); resetGenerateBtn(); }
     }
 
-    function showNotification(title, body, icon = 'clinical_notes') {
-      if (!('Notification' in window) || Notification.permission !== 'granted') {
-        return;
-      }
-      new Notification(title, { body, icon: 'https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/clinical_notes/default/48px.svg' });
-    }
-
     async function pollJob(jobId) {
       try {
         const r = await fetch(`${API}/api/job/${jobId}?since=${logOffset}`); const d = await r.json();
@@ -1072,12 +1115,7 @@
           clearInterval(pollTimer); pollTimer = null; resetGenerateBtn();
           document.getElementById('log-dot').style.background = d.status === 'done' ? '#16a34a' : '#ef4444';
           if (d.status === 'done') {
-            showNotification('Generation Complete', `Successfully generated documents for patient ${d.patient_id}.`);
             loadDocuments(currentPatientId);
-          } else if (d.status === 'error') {
-            showNotification('Generation Failed', `An error occurred while generating documents for patient ${d.patient_id}.`);
-          } else if (d.status === 'cancelled') {
-            showNotification('Generation Cancelled', `The generation job for patient ${d.patient_id} was cancelled.`);
           }
         }
       } catch (_) { }
@@ -1378,6 +1416,77 @@
         const d = await r.json(); currentJobId = d.job_id; logOffset = 0; appendLog(`📋 Render job: ${currentJobId}`);
         pollTimer = setInterval(() => pollJob(currentJobId), 2000);
       } catch (e) { appendLog('❌ PDF rendering failed: ' + e.message); resetGenerateBtn(); }
+    }
+
+    // ── Patient Tracker Export ──────────────────────────────────────────────
+    function openTrackerModal() {
+      const modal = document.getElementById('tracker-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      
+      document.getElementById('tracker-patient-rows').innerHTML = allPatientIds.map(id => {
+        const name = patientNames[id] || ('Patient ' + id);
+        return `
+        <tr class="hover:bg-gray-50">
+          <td class="py-2 pr-2"><input type="checkbox" class="tracker-patient-select lg-chk" value="${id}" checked></td>
+          <td class="py-2 pr-4 text-[11px] font-mono">${id}</td>
+          <td class="py-2 text-[11px] font-medium">${name}</td>
+        </tr>`;
+      }).join('');
+      
+      trackerSelectAll = true;
+      document.querySelector('[onclick="toggleTrackerSelectAll()"]').textContent = 'Deselect All';
+    }
+
+    function closeTrackerModal() {
+      const modal = document.getElementById('tracker-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function toggleTrackerSelectAll() {
+      trackerSelectAll = !trackerSelectAll;
+      document.querySelectorAll('.tracker-patient-select').forEach(c => c.checked = trackerSelectAll);
+      document.querySelector('[onclick="toggleTrackerSelectAll()"]').textContent = trackerSelectAll ? 'Deselect All' : 'Select All';
+    }
+
+    async function startTrackerExport() {
+      const checkboxes = [...document.querySelectorAll('.tracker-patient-select')];
+      const selectedIds = checkboxes.filter(c => c.checked).map(c => c.value);
+      if (!selectedIds.length) { alert('Select at least one patient.'); return; }
+      closeTrackerModal();
+      
+      clearLogs();
+      appendLog('📤 Spawning Patient Tracker Export job...');
+      appendLog(`📋 Selected Patients: ${selectedIds.join(', ')}`);
+      
+      try {
+        const r = await fetch(`${API}/api/patient_tracker_export`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ patient_ids: selectedIds })
+        });
+        
+        if (!r.ok) {
+          throw new Error(await r.text() || 'Export failed');
+        }
+        
+        const blob = await r.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'patient_tracker_export.pdf';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        
+        appendLog('✅ Patient Tracker Export PDF downloaded successfully.');
+        appendLog('📂 Files saved to generated_output/patient-data/patient_tracker_export.pdf and .tsv');
+      } catch (e) {
+        appendLog('❌ Patient Tracker Export failed: ' + e.message);
+        alert('Patient Tracker Export failed: ' + e.message);
+      }
     }
 
     // ── Batch ──────────────────────────────────────────────────────────────

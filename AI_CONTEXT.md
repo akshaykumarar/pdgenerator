@@ -494,6 +494,13 @@ Workflow continues gracefully.
 
 # Maintenance & Updates
 
+### v6.0 Clinical Prior Authorization Pipeline Enhancements (2026-05-22)
+* **Limit Supporting Documents to Max 5**: Added `MAX_SUPPORTING_DOCUMENTS = 5` settings and capped document selects across planner, workflow, and API previews. Included feedback-driven override to bypass capping when explicit commands are supplied in user comments.
+* **Medications Target Support**: Treated medications as first-class PA targets. Integrated regex check `^[JQjq]\d{4}$` in `planner.py` to route HCPCS drug codes (e.g. `J0897`, `Q5124`) straight to `medication` case types instead of diagnostic. Expanded prompts to incorporate medication-specific guidelines (indication, step-therapy, labs, failed therapies).
+* **Notification Removal**: Completely removed all browser notification permission requests and calls to `showNotification(...)` in the UI to present a clean, uninterrupted user experience.
+* **Patient Tracker Export**: Created `patient_tracker_export.py` module generating premium landscape ReportLab PDFs and companion TSVs inside `generated_output/patient-data/`. Developed a selection modal in the UI and a REST endpoint (`POST /api/patient_tracker_export`) in `api_server.py` to serve compiling metrics (using persisted `concise_summary.json` cached files).
+
+
 ### v5.3 Gap Injection System Overhaul (2026-04-09)
 * **Multi-Dimensional Gap Archetypes**: Added `GAP_ARCHETYPE_POOL` in `src/ai/prompts.py` — 20 archetypes across 5 clinical dimensions (Profile-Behavior, Temporal-Sequence, Treatment-Escalation, Cross-Document, Policy-Criteria).
 * **Weighted Selector**: `_select_gap_archetypes()` randomizes 2–4 archetypes per run, guaranteeing ≥2 distinct dimensions and ≥1 high-impact (TE or PC) archetype per denial case.
