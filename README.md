@@ -114,6 +114,8 @@ Two interface files in `ui/` share the same **3-silo layout**:
 - **Live log panel** — streams real-time generation output (thread-safe for parallel runs)
 - **Document list** — PDF links with versioning (e.g. `v3.0`, `v3.1`)
 - **Batch Modal** — header button opens patient checklist → `POST /api/generate_all`
+- **Patient Tracker Export** — header button next to Batch Run opens patient checklist modal to compile landscape PDF table and companion TSV inside `generated_output/patient-data/`
+
 
 ### Concurrency & Parallelism
 
@@ -167,6 +169,10 @@ After each run, a 2×2 summary panel is shown:
 - **PA Rejection Documents**: Generate intentionally deficient clinical documents (missing tests, failed criteria) to test denial workflows. Controlled via UI toggle and custom gap instructions.
 - **Complete PA Request Forms**: Requesting provider, urgency level, clinical justification, ICD-10 diagnoses, previous treatments, expected outcome
 - **Future Procedure Dates**: Procedure dates set 7–90 days in the future for realistic PA workflows
+- **Supporting Documents Cap**: Enforces a strict cap of `MAX_SUPPORTING_DOCUMENTS = 5` high-value report documents while always preserving all core documents (Prior Authorization Requests and Summaries). Capping is dynamically bypassed if the user inputs feedback specifying more (e.g., "generate 6 documents").
+- **Medications as First-Class Targets**: Intercepts CPT/HCPCS codes starting with `J/Q` (e.g. `J0897`, `Q5124`) using regex, routing them to medication-specific prompts (step-therapies, contraindications, dosing, duration, and lab markers) with 100% backward compatibility for legacy consuming apps.
+- **Patient Tracker Export**: A landscape-aligned PDF grid and companion TSV compilation of patient Prior Authorization metrics saved to `generated_output/patient-data/`. Features enriched dual-formatting: PDF cell metrics use custom HTML formatting (bold headers, bulleted lists, and red text highlighting gaps) for a premium presentation, while TSV files are completely sanitized of HTML tags and use clean standard multi-line values (using newlines `\n` and plain text bullets `- `) for robust copy-pasting or direct importing into Microsoft Excel. The export supports exactly 13 columns: Patient ID, Patient Name, DOB, Department, CPT Code, Procedure/Medicine Name, Provider, Insurance Type, Policy Name, extraction expectation (corresponds to details_from_extraction), likelihood expectations (corresponds to likelihood_without_documents), attachments, and post-attachment likelihood (incorporates likelihood_change_with_documents and Correct Items / Gaps details). It resolves payer details from the persona `payer` block and excludes version-suffixed persona PDFs case-insensitively.
+
 
 ### Concise Clinical Summary (v6)
 
@@ -335,6 +341,9 @@ pdgenerator/
 ├── generated_output/           # Generated files (gitignored)
 │   ├── patient-data/<ID - Name - CPT - Outcome>/ # Per-patient documents
 │   │   └── *.pdf               # Persona, reports, summaries ONLY (latest generated)
+│   ├── patient-data/
+│   │   ├── patient_tracker_export.pdf # Compiled landscape PDF Prior Authorization tracker
+│   │   └── patient_tracker_export.tsv # Compiled companion TSV file for Microsoft Excel
 │   ├── archive/                # Archived/past generated versions
 │   ├── metadata/               # Patient text records (-record.txt)
 │   ├── summary/                # Clinical summary PDFs (flat structure)
@@ -422,6 +431,7 @@ We have integrated full **Swagger OpenAPI documentation**. To explore the intera
 | POST | `/api/cancel/<job_id>` | ⛔ Cancel an active generation job with auto-rollback |
 | POST | `/api/purge` | 🗑️ Purge specific databases or generated files (patient mode supports `targets[]` and `mode=delete/archive`) |
 | POST | `/api/template/save` | 💾 Save a generated document as a global template |
+| POST | `/api/patient_tracker_export` | 📊 Compile patient Prior Authorization metrics landscape PDF and companion TSV |
 | GET | `/api/job/<job_id>?since=N` | Poll job status + incremental logs |
 | GET | `/api/output/<patient_id>` | List all generated PDFs for a patient |
 | GET | `/api/download/<id>/<type>/<file>` | Serve PDF inline in browser |

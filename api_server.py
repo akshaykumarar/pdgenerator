@@ -549,19 +549,92 @@ def api_status():
 @app.route("/api/patients")
 def api_patients():
     """
-    Return all patient IDs from the Excel plan.
+    Return all patient IDs from the Excel plan and their current names from the database.
     ---
     tags:
       - Patients
     responses:
       200:
-        description: List of patient IDs
+        description: List of patient IDs and a dictionary of patient names mapped by ID
     """
     try:
         ids = data_loader.get_all_patient_ids()
-        return jsonify({"patients": ids})
+        patient_names = {}
+        for p_id in ids:
+            name = patient_db.get_patient_name(p_id)
+            if name:
+                patient_names[p_id] = name
+            else:
+                patient_names[p_id] = f"Patient {p_id}"
+        return jsonify({"patients": ids, "patient_names": patient_names})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/patient_tracker_export", methods=["POST"])
+def api_patient_tracker_export():
+    """
+    Generate a prior authorization patient tracker PDF and TSV.
+    Returns the PDF as a direct download attachment.
+    ---
+    tags:
+      - Reports
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          properties:
+            patient_ids:
+              type: array
+              items:
+                type: string
+              description: List of patient IDs to export
+    responses:
+      200:
+        description: PDF attachment containing the landscape table
+      400:
+        description: No patient IDs or invalid request
+      500:
+        description: Generation failure
+    """
+    try:
+        data = request.get_json() or {}
+        patient_ids = data.get("patient_ids", [])
+        if not patient_ids:
+            return jsonify({"error": "No patient IDs provided"}), 400
+            
+        normalized_ids = []
+        for p_id in patient_ids:
+            clean_id = str(p_id).strip()
+            clean_id = "".join(c for c in clean_id if c.isalnum() or c in "-_")
+            if clean_id:
+                normalized_ids.append(clean_id)
+                
+        if not normalized_ids:
+            return jsonify({"error": "No valid patient IDs found"}), 400
+            
+        from src.doc_generation.patient_tracker_export import generate_tracker_export
+        pdf_path = generate_tracker_export(normalized_ids)
+        
+        if not os.path.exists(pdf_path):
+            return jsonify({"error": "Failed to generate export file"}), 500
+            
+        directory = os.path.dirname(pdf_path)
+        filename = os.path.basename(pdf_path)
+        
+        return send_from_directory(
+            directory,
+            filename,
+            as_attachment=True,
+            download_name="patient_tracker_export.pdf",
+            mimetype="application/pdf"
+        )
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 
 
 @app.route("/api/patient/<patient_id>")

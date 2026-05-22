@@ -7,8 +7,11 @@
         ],
         "templates": [
             "prior_auth_request_template.json",
+            "consult_note_template.json",
             "radiology_report_template.json",
             "imaging_report_template.json",
+            "medication_history_template.json",
+            "physical_therapy_note_template.json",
             "summary_template_concise.json"
         ]
     },
@@ -20,6 +23,10 @@
         ],
         "templates": [
             "prior_auth_request_template.json",
+            "consult_note_template.json",
+            "radiology_report_template.json",
+            "medication_history_template.json",
+            "physical_therapy_note_template.json",
             "operative_report_template.json",
             "summary_template_concise.json"
         ]
@@ -32,8 +39,11 @@
         ],
         "templates": [
             "prior_auth_request_template.json",
+            "consult_note_template.json",
             "physical_therapy_note_template.json",
             "therapy_note_template.json",
+            "radiology_report_template.json",
+            "medication_history_template.json",
             "summary_template_concise.json"
         ]
     },
@@ -52,7 +62,11 @@
         ],
         "templates": [
             "prior_auth_request_template.json",
+            "consult_note_template.json",
             "medication_history_template.json",
+            "therapy_note_template.json",
+            "imaging_report_template.json",
+            "radiology_report_template.json",
             "summary_template_concise.json"
         ]
     },
@@ -64,8 +78,10 @@
         ],
         "templates": [
             "prior_auth_request_template.json",
+            "consult_note_template.json",
             "mental_health_note_template.json",
             "therapy_note_template.json",
+            "medication_history_template.json",
             "summary_template_concise.json"
         ]
     },
@@ -80,7 +96,12 @@
         "templates": [
             "prior_auth_request_template.json",
             "consult_note_template.json",
+            "medication_history_template.json",
+            "therapy_note_template.json",
+            "imaging_report_template.json",
+            "radiology_report_template.json",
             "summary_template_concise.json"
         ]
     }
 }
+

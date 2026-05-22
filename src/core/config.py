@@ -126,4 +126,7 @@ __all__ = [
     "get_patient_records_folder",
     "DEBUG_DIR",
     "get_patient_debug_folder",
+    "MAX_SUPPORTING_DOCUMENTS",
 ]
+
+MAX_SUPPORTING_DOCUMENTS = 5

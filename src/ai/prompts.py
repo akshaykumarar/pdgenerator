@@ -119,8 +119,7 @@ J. **Medical Biography & History (bio_narrative - MANDATORY)**:
 
 === CRITICAL PROJECT CONSTRAINTS ===
 A. **Data Density (DYNAMIC)**:
-   - Generate documents based on CLINICAL COMPLEXITY, NOT a fixed number.
-   - Simple cases: 3-4 documents. Moderate: 5-6. Complex: 7-10.
+   - Generate at most 5 high-value supporting documents (excluding the clinical summary and prior authorization request) that clearly justify the medical necessity, unless the user explicitly requests more in their feedback.
    - No filler documents.
 B. **Clinical Status**:
    - Target Procedure must be 'requested'. Historical Procedures 'completed'.
@@ -254,15 +253,16 @@ def get_clinical_data_prompt(case_details: dict, patient_state: dict, document_p
        - **STRICT ALIGNMENT**: ALL reports MUST reference ONLY the codes defined in the persona. NO new codes may be introduced in reports.
        - **CONSISTENCY RULE**: Any ICD-10 code referenced in the body of a clinical document or PA request MUST identically match a code listed in the `supporting_diagnoses` array and persona's diagnosis list.
        - **FACILITY CONSISTENCY**: The `procedure_facility.facility_name` MUST be populated identically across ALL document headers, procedure plans, and PA location fields without variation.
-    5. **Data Density (DYNAMIC - Based on Clinical Complexity)**:
-       - **DO NOT default to a fixed number of documents.**
-       - Assess the clinical complexity and generate an APPROPRIATE number:
-         - **Simple procedures** (e.g., routine imaging, minor outpatient): 3-4 documents.
-         - **Moderate complexity** (e.g., surgical procedures, multiple conditions): 5-6 documents.
-         - **High complexity** (e.g., chronic disease, multiple specialists, prior authorizations needed): 7-10 documents.
-       - **Each document must provide UNIQUE clinical value**. No filler or redundant documents.
-       - **Document types to consider**: Consult Notes, Lab Reports, Imaging Reports, Procedure Notes, Discharge Summaries, Specialist Notes, Physical Therapy Notes, Prior Authorization Requests, Referral Letters, Medication Lists, Progress Notes.
-     6. **Document Generation (CRITICAL Rules)**:
+    5. **Data Density (DYNAMIC - Supporting Documents Cap)**:
+        - Generate at most 5 high-value supporting documents (excluding the clinical summary and prior authorization request) that clearly justify the medical necessity of the requested service/procedure/medication.
+        - **Bypass Rule**: If the user's additional feedback explicitly requests a specific higher count (e.g. 6 to 10) or requests to "generate more", override this cap to match the user's requested count.
+        - **Each document must provide UNIQUE clinical value** and explicitly serve as high-quality evidence.
+        - **Evidence Alignment Requirement**: Every generated clinical report/note MUST explicitly state in its text:
+          * Which specific payer policy criteria it supports.
+          * Why it clinically helps justify the prior authorization case.
+          * How it directly connects to the requested service/procedure/medication.
+        - **Document types to consider**: Consult Notes, Lab Reports, Imaging Reports, Procedure Notes, Discharge Summaries, Specialist Notes, Physical Therapy Notes, Referral Letters, Medication Lists, Progress Notes.
+      6. **Document Generation (CRITICAL Rules)**:
         - Generate `documents` list with rich, detailed content.
         - **NO START/END MARKERS**: Do NOT use '--- REPORT START ---' or '--- REPORT END ---'. Begin documents directly.
         - **REPORT DETAIL REQUIREMENTS**:
@@ -277,6 +277,14 @@ def get_clinical_data_prompt(case_details: dict, patient_state: dict, document_p
             * **findings, impression, procedure_description, operative_findings, session_summary, therapist_observations**: At least 2-4 sentences (40-80 words) with specific measurements, dates, or clinical terms where appropriate.
             * **clinical_justification, HPI, assessment, plan, clinical_indication**: Multi-sentence with clear medical necessity and timeline.
             * **procedure_details, study_information**: Fill all sub-fields with realistic values; do not leave empty strings for required keys.
+          - **MEDICATION / THERAPY GENERATION GUIDELINES (MANDATORY)**:
+            If the requested service is a medication (e.g. infusion, injection, formulary drug):
+            * **Indication & Diagnosis**: Clearly specify the FDA-approved or clinically accepted indication and active diagnosis (with matching ICD-10 code).
+            * **Failed Prior Therapies**: Detail the exact names, dosages, durations, and outcomes of failed prior therapies (e.g., "Patient tried [Formulary Drug A] for 8 weeks with no response").
+            * **Contraindications / Intolerances**: Explicitly document any contraindications or intolerances to first-line/formulary drugs (e.g., "Patient experienced severe gastrointestinal distress on [Alternative Drug]").
+            * **Dosing & Duration**: Clearly state the requested dosage, frequency of administration, and anticipated duration of treatment.
+            * **Monitoring Labs**: Include baseline and regular monitoring laboratory/diagnostic tests (e.g., liver function tests, renal panels, CBC) with dates and results.
+            * **Step Therapy/Formulary Rationale**: Provide explicit step-therapy or formulary exception justifications explaining why non-preferred agents are required.
           - **Example — MINIMAL (bad)**: findings: "No acute findings."
           - **Example — INTENSIVE (good)**: findings: "Cardiac CT angiography was performed with contrast. The left main, LAD, circumflex, and right coronary arteries are patent. There is non-obstructive plaque in the mid-LAD (approximately 20% stenosis). Left ventricular size and function are normal. No pericardial effusion. Incidental note: small hepatic cyst in segment VII, stable from prior."
           - For each section in the DOCUMENT PLAN (findings, impression, clinical_history, procedure_description, etc.), provide at least 2-4 sentences with specific clinical detail; avoid one-line answers.
