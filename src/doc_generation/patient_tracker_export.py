@@ -1,16 +1,12 @@
 """
 Patient Tracker Exporter Module.
-Generates a landscape PDF table and companion TSV file containing prioritized clinical patient metrics.
+Generates a companion CSV file containing prioritized clinical patient metrics.
 """
 import os
 import json
 import csv
+import re
 from typing import List, Dict, Any, Optional
-
-from reportlab.lib.pagesizes import letter, landscape
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib import colors
 
 from src.core.config import (
     PATIENT_DATA_DIR,
@@ -52,20 +48,18 @@ def get_attachment_explanation(clean_name: str) -> str:
 
 def generate_tracker_export(patient_ids: List[str]) -> str:
     """
-    Compiles patient metrics for selected patient IDs into a landscape PDF table
-    and companion TSV file. Saves both to `generated_output/patient-data/`.
+    Compiles patient prior authorization metrics for selected patient IDs into a unified CSV file.
+    Saves the file to `generated_output/patient-data/patient_tracker_export.csv`.
     
     Args:
         patient_ids: List of numeric patient ID strings to export.
         
     Returns:
-        The absolute path to the generated PDF.
+        The absolute path to the generated CSV.
     """
-    # Ensure patient data directory exists
     os.makedirs(PATIENT_DATA_DIR, exist_ok=True)
     
-    pdf_rows = []
-    tsv_rows = []
+    csv_rows = []
     
     for p_id in patient_ids:
         p_id = str(p_id).strip()
@@ -102,15 +96,6 @@ def generate_tracker_export(patient_ids: List[str]) -> str:
         if not row_name or row_name == "Unknown Unknown":
             row_name = f"Patient {p_id}"
             
-        # 3. DOB
-        row_dob = ""
-        if summary_data and "test_case_and_overview" in summary_data:
-            overview = summary_data["test_case_and_overview"]
-            if isinstance(overview, dict):
-                row_dob = overview.get("dob", "")
-        if not row_dob:
-            row_dob = patient_data.get("dob") or patient_data.get("demographics", {}).get("dob") or "Unknown"
-            
         # 4. Department
         row_dept = case_details.get("department") or ""
         if not row_dept and summary_data and "test_case_and_overview" in summary_data:
@@ -120,7 +105,7 @@ def generate_tracker_export(patient_ids: List[str]) -> str:
         if not row_dept:
             row_dept = "Unknown"
 
-        # 5. CPT Code
+        # 5. CPT/HCPC Code
         row_cpt = case_details.get("cpt_code") or ""
         if not row_cpt and summary_data and "test_case_and_overview" in summary_data:
             overview = summary_data["test_case_and_overview"]
@@ -128,6 +113,10 @@ def generate_tracker_export(patient_ids: List[str]) -> str:
                 row_cpt = overview.get("cpt_code", "")
         if not row_cpt:
             row_cpt = patient_data.get("requested_procedure", {}).get("cpt_code") or "Unknown"
+            
+        # Check if row_cpt is a HCPC code (alphanumeric containing alphabetic characters)
+        is_hcpcs = any(c.isalpha() for c in row_cpt.strip()) if row_cpt and row_cpt != "Unknown" else False
+        code_label = "HCPC" if is_hcpcs else "CPT"
 
         # 6. Procedure/Medicine Name
         row_proc = case_details.get("procedure") or ""
@@ -164,21 +153,16 @@ def generate_tracker_export(patient_ids: List[str]) -> str:
             row_policy_name = "Unknown"
 
         # ─── 10. Extraction Expectation ───────────────────────────────────────
-        extraction_pdf = ""
-        extraction_tsv = ""
+        extraction_csv = ""
         if summary_data and "details_from_extraction" in summary_data:
             extract = summary_data["details_from_extraction"]
             if isinstance(extract, list):
                 clean_extract = [str(e).replace("\t", " ").replace("\n", " ").strip() for e in extract if str(e).strip()]
-                extraction_pdf = "• " + "<br/>• ".join(clean_extract) if clean_extract else ""
-                extraction_tsv = "\n".join([f"- {e}" for e in clean_extract])
+                extraction_csv = "\n".join([f"- {e}" for e in clean_extract])
             else:
-                clean_extract = str(extract).replace("\t", " ").replace("\n", " ").strip()
-                extraction_pdf = clean_extract
-                extraction_tsv = clean_extract
+                extraction_csv = str(extract).replace("\t", " ").replace("\n", " ").strip()
                 
-        if not extraction_pdf or not extraction_tsv:
-            # Fallback path - retrieve supporting diagnoses
+        if not extraction_csv:
             diagnoses_list = []
             if patient_data:
                 pa_req = patient_data.get("pa_request") or {}
@@ -187,44 +171,34 @@ def generate_tracker_export(patient_ids: List[str]) -> str:
             diagnoses_str = "; ".join(diagnoses_list) if diagnoses_list else "None identified"
             req_criteria = case_details.get("details") or "No details provided"
             
-            extraction_pdf = (
-                f"<b>Expected Service:</b> {row_proc} (CPT: {row_cpt})<br/>"
-                f"<b>Target Department:</b> {row_dept}<br/>"
-                f"<b>Primary Diagnosis:</b> {diagnoses_str}<br/>"
-                f"<b>Required Criteria:</b> {req_criteria}"
-            )
-            extraction_tsv = (
-                f"Expected Service: {row_proc} (CPT: {row_cpt})\n"
+            extraction_csv = (
+                f"Expected Service: {row_proc} ({code_label}: {row_cpt})\n"
                 f"Target Department: {row_dept}\n"
                 f"Primary Diagnosis: {diagnoses_str}\n"
                 f"Required Criteria: {req_criteria}"
             )
 
         # ─── 11. Likelihood Expectations ──────────────────────────────────────
-        likelihood_pre_pdf = ""
-        likelihood_pre_tsv = ""
+        likelihood_pre_csv = ""
         if summary_data and "likelihood_without_documents" in summary_data:
-            val = str(summary_data["likelihood_without_documents"]).replace("\t", " ").replace("\n", " ").strip()
-            likelihood_pre_pdf = val
-            likelihood_pre_tsv = val
+            likelihood_pre_csv = str(summary_data["likelihood_without_documents"]).replace("\t", " ").replace("\n", " ").strip()
             
-        if not likelihood_pre_pdf:
+        if not likelihood_pre_csv:
             row_outcome = case_details.get("outcome") or "Unknown"
             req_criteria = case_details.get("details") or "No details provided"
             if row_outcome.lower() == "approval":
                 explanation = (
                     f"High baseline likelihood of approval (estimated 70-80%) assuming standard clinical criteria "
-                    f"are fully met. The clinical indication for {row_proc} (CPT {row_cpt}) will be evaluated against "
+                    f"are fully met. The clinical indication for {row_proc} ({code_label} {row_cpt}) will be evaluated against "
                     f"the following guideline criteria: {req_criteria}."
                 )
             else:
                 explanation = (
                     f"Low baseline likelihood of approval (estimated <20%) prior to document review. "
-                    f"Standard clinical guidelines for {row_proc} (CPT {row_cpt}) require documented conservative "
+                    f"Standard clinical guidelines for {row_proc} ({code_label} {row_cpt}) require documented conservative "
                     f"management, objective diagnostic findings, and failed step-therapies as outlined: {req_criteria}."
                 )
-            likelihood_pre_pdf = explanation
-            likelihood_pre_tsv = explanation
+            likelihood_pre_csv = explanation
 
         # ─── 12. Attachments ──────────────────────────────────────────────────
         attachments_list = []
@@ -233,33 +207,26 @@ def generate_tracker_export(patient_ids: List[str]) -> str:
             if isinstance(raw_attachments, list):
                 attachments_list = [str(a).strip() for a in raw_attachments if str(a).strip()]
             
-        # Scan folder for actual generated PDFs as fallback, strictly excluding personas case-insensitively
         report_folder = get_patient_report_folder(p_id)
         if os.path.exists(report_folder):
             for file_entry in os.listdir(report_folder):
                 if file_entry.endswith(".pdf"):
-                    # Exclude summary files and persona PDFs case-insensitively
                     if "persona" in file_entry.lower() or file_entry.startswith("Clinical_Summary"):
                         continue
                     clean_name = file_entry.replace(f"DOC-{p_id}-", "").replace(".pdf", "").replace("_", " ")
-                    # Add explanation fallback to list if not already represented
                     if not any(clean_name.lower() in a.lower() for a in attachments_list):
                         rich_desc = get_attachment_explanation(clean_name)
                         attachments_list.append(rich_desc)
                         
         if not attachments_list:
-            attachments_pdf = "No reports generated"
-            attachments_tsv = "No reports generated"
+            attachments_csv = "No reports generated"
         else:
             clean_attachments = [a.replace("\t", " ").replace("\n", " ").strip() for a in attachments_list if a.strip()]
-            attachments_pdf = "• " + "<br/>• ".join(clean_attachments)
-            attachments_tsv = "\n".join([f"- {a}" for a in clean_attachments])
+            attachments_csv = "\n".join([f"- {a}" for a in clean_attachments])
 
         # ─── 13. Post-Attachment Likelihood ───────────────────────────────────
-        likelihood_post_pdf = ""
-        likelihood_post_tsv = ""
+        likelihood_post_csv = ""
         if summary_data:
-            # Retrieve final entry in list
             final_change = ""
             if "likelihood_change_with_documents" in summary_data:
                 changes = summary_data["likelihood_change_with_documents"]
@@ -268,7 +235,6 @@ def generate_tracker_export(patient_ids: List[str]) -> str:
                 else:
                     final_change = str(changes).replace("\t", " ").replace("\n", " ").strip()
             
-            # Extract post-attachment details
             post_param = summary_data.get("likelihood_expectations_post_attachments")
             correct = []
             gaps = []
@@ -280,29 +246,17 @@ def generate_tracker_export(patient_ids: List[str]) -> str:
                     correct = getattr(post_param, "correct_items", []) or []
                     gaps = getattr(post_param, "gaps_and_issues", []) or []
                     
-            # For PDF:
-            likelihood_post_pdf = f"<b>{final_change or 'Analyzed'}</b>"
+            likelihood_post_csv = final_change or "Analyzed"
             if correct:
                 clean_c = [str(c).strip() for c in correct if str(c).strip()]
                 if clean_c:
-                    likelihood_post_pdf += "<br/><b>Correct Items:</b><br/>• " + "<br/>• ".join(clean_c)
+                    likelihood_post_csv += "\nCorrect Items:\n" + "\n".join([f"- {c}" for c in clean_c])
             if gaps:
                 clean_g = [str(g).strip() for g in gaps if str(g).strip()]
                 if clean_g:
-                    likelihood_post_pdf += "<br/><b><font color='red'>Gaps/Issues:</font></b><br/>• " + "<br/>• ".join(clean_g)
+                    likelihood_post_csv += "\nGaps/Issues:\n" + "\n".join([f"- {g}" for g in clean_g])
                     
-            # For TSV:
-            likelihood_post_tsv = final_change or "Analyzed"
-            if correct:
-                clean_c = [str(c).strip() for c in correct if str(c).strip()]
-                if clean_c:
-                    likelihood_post_tsv += "\nCorrect Items:\n" + "\n".join([f"- {c}" for c in clean_c])
-            if gaps:
-                clean_g = [str(g).strip() for g in gaps if str(g).strip()]
-                if clean_g:
-                    likelihood_post_tsv += "\nGaps/Issues:\n" + "\n".join([f"- {g}" for g in clean_g])
-                    
-        if not likelihood_post_pdf:
+        if not likelihood_post_csv:
             row_outcome = case_details.get("outcome") or "Unknown"
             req_criteria = case_details.get("details") or "No details provided"
             if row_outcome.lower() == "approval":
@@ -317,152 +271,47 @@ def generate_tracker_export(patient_ids: List[str]) -> str:
                     f"Required conservative therapies, objective diagnostic measurements, or clinical assessments were not "
                     f"documented or failed to meet payer policy guidelines: {req_criteria}."
                 )
-            likelihood_post_pdf = explanation
-            likelihood_post_tsv = explanation
+            likelihood_post_csv = explanation
             
-        pdf_cols = base_cols = [
-            row_id,
-            row_name,
-            row_dob,
-            row_dept,
-            row_cpt,
-            row_proc,
-            row_provider,
-            row_insurance_type,
-            row_policy_name
-        ]
-        
-        pdf_rows.append(pdf_cols + [
-            extraction_pdf,
-            likelihood_pre_pdf,
-            attachments_pdf,
-            likelihood_post_pdf
+        def sanitize_csv_cell(val: Any) -> str:
+            val_str = str(val or "").strip()
+            # Remove all HTML/XML tags
+            val_str = re.sub(r"<[^>]*>", "", val_str)
+            # Excel CSV safety: if string starts with standard formula triggers, prepend a single quote to prevent injection
+            if val_str.startswith(('=', '+', '@')):
+                val_str = "'" + val_str
+            return val_str
+
+        csv_rows.append([
+            sanitize_csv_cell(row_id),
+            sanitize_csv_cell(row_name),
+            sanitize_csv_cell(row_dept),
+            sanitize_csv_cell(row_cpt),
+            sanitize_csv_cell(row_proc),
+            sanitize_csv_cell(row_provider),
+            sanitize_csv_cell(row_insurance_type),
+            sanitize_csv_cell(row_policy_name),
+            sanitize_csv_cell(extraction_csv),
+            sanitize_csv_cell(likelihood_pre_csv),
+            sanitize_csv_cell(attachments_csv),
+            sanitize_csv_cell(likelihood_post_csv)
         ])
         
-        tsv_rows.append(pdf_cols + [
-            extraction_tsv,
-            likelihood_pre_tsv,
-            attachments_tsv,
-            likelihood_post_tsv
-        ])
-        
-    # Paths to save
-    pdf_path = os.path.join(PATIENT_DATA_DIR, "patient_tracker_export.pdf")
-    tsv_path = os.path.join(PATIENT_DATA_DIR, "patient_tracker_export.tsv")
+    csv_path = os.path.join(PATIENT_DATA_DIR, "patient_tracker_export.csv")
     
-    # ─── Save TSV ─────────────────────────────────────────────────────────────
     try:
-        with open(tsv_path, "w", encoding="utf-8", newline="") as f:
-            writer = csv.writer(f, delimiter="\t")
+        with open(csv_path, "w", encoding="utf-8", newline="") as f:
+            writer = csv.writer(f, delimiter=",", quoting=csv.QUOTE_MINIMAL)
             writer.writerow([
-                "Patient ID", "Patient Name", "DOB", "Department", "CPT Code",
+                "Patient ID", "Patient Name", "Department", "CPT/HCPC Code",
                 "Procedure/Medicine Name", "Provider", "Insurance Type", "Policy Name",
                 "extraction expectation", "likelihood expectations", "attachments",
                 "post-attachment likelihood"
             ])
-            for r in tsv_rows:
+            for r in csv_rows:
                 writer.writerow(r)
-        print(f"✅ TSV file exported successfully: {tsv_path}")
+        print(f"✅ CSV file exported successfully: {csv_path}")
     except Exception as e:
-        print(f"⚠️ Could not save TSV: {e}")
+        print(f"⚠️ Could not save CSV: {e}")
         
-    # ─── Save PDF ─────────────────────────────────────────────────────────────
-    doc = SimpleDocTemplate(
-        pdf_path,
-        pagesize=landscape(letter),
-        rightMargin=36,
-        leftMargin=36,
-        topMargin=36,
-        bottomMargin=36
-    )
-    
-    styles = getSampleStyleSheet()
-    
-    title_style = ParagraphStyle(
-        'TitleStyle',
-        parent=styles['Heading2'],
-        fontSize=12,
-        leading=14,
-        fontName='Helvetica-Bold',
-        textColor=colors.HexColor('#1A365D')
-    )
-    
-    header_style = ParagraphStyle(
-        'HeaderCell',
-        parent=styles['Normal'],
-        fontSize=6,
-        leading=7,
-        fontName='Helvetica-Bold',
-        textColor=colors.white
-    )
-    
-    cell_style = ParagraphStyle(
-        'Cell',
-        parent=styles['Normal'],
-        fontSize=5.5,
-        leading=6.5,
-        textColor=colors.HexColor('#2D3748')
-    )
-    
-    story = []
-    story.append(Paragraph("Clinical Patient Prior Authorization Tracker Export", title_style))
-    story.append(Spacer(1, 8))
-    
-    headers = [
-        "Patient ID", "Patient Name", "DOB", "Department", "CPT Code",
-        "Procedure/Medicine Name", "Provider", "Insurance Type", "Policy Name",
-        "extraction expectation", "likelihood expectations", "attachments",
-        "post-attachment likelihood"
-    ]
-    
-    table_data = []
-    # Header Row
-    table_data.append([Paragraph(h, header_style) for h in headers])
-    
-    # Helper function to escape special XML characters except explicitly allowed HTML formatting tags
-    def escape_for_paragraph(text: str) -> str:
-        if not isinstance(text, str):
-            text = str(text)
-        placeholders = {
-            "<b>": "___B_START___",
-            "</b>": "___B_END___",
-            "<br/>": "___BR___",
-            "<font color='red'>": "___FONT_RED___",
-            "</font>": "___FONT_END___"
-        }
-        for tag, placeholder in placeholders.items():
-            text = text.replace(tag, placeholder)
-            
-        text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        
-        for tag, placeholder in placeholders.items():
-            text = text.replace(placeholder, tag)
-            
-        return text
-
-    # Data Rows
-    for r in pdf_rows:
-        table_data.append([Paragraph(escape_for_paragraph(str(cell or "N/A")), cell_style) for cell in r])
-        
-    # Column widths summing to exactly 720 points
-    colWidths = [30, 50, 35, 45, 30, 60, 55, 40, 55, 75, 80, 80, 85]
-    
-    t = Table(table_data, colWidths=colWidths, repeatRows=1)
-    t.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1A365D')),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-        ('LEFTPADDING', (0, 0), (-1, -1), 3),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 3),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F7FAFC')]),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
-    ]))
-    
-    story.append(t)
-    doc.build(story)
-    
-    print(f"✅ PDF file exported successfully: {pdf_path}")
-    return pdf_path
-
+    return csv_path

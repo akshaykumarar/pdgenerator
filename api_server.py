@@ -574,14 +574,14 @@ def api_patients():
 @app.route("/api/patient_tracker_export", methods=["POST"])
 def api_patient_tracker_export():
     """
-    Generate a prior authorization patient tracker PDF and TSV.
-    Returns the PDF as a direct download attachment.
+    Generate a prior authorization patient tracker CSV.
+    Returns the CSV as a direct download attachment.
     ---
     tags:
       - Reports
     parameters:
       - in: body
-        name: body
+      - name: body
         required: true
         schema:
           type: object
@@ -593,7 +593,7 @@ def api_patient_tracker_export():
               description: List of patient IDs to export
     responses:
       200:
-        description: PDF attachment containing the landscape table
+        description: CSV attachment containing the clinical priority table
       400:
         description: No patient IDs or invalid request
       500:
@@ -616,20 +616,20 @@ def api_patient_tracker_export():
             return jsonify({"error": "No valid patient IDs found"}), 400
             
         from src.doc_generation.patient_tracker_export import generate_tracker_export
-        pdf_path = generate_tracker_export(normalized_ids)
+        csv_path = generate_tracker_export(normalized_ids)
         
-        if not os.path.exists(pdf_path):
+        if not os.path.exists(csv_path):
             return jsonify({"error": "Failed to generate export file"}), 500
             
-        directory = os.path.dirname(pdf_path)
-        filename = os.path.basename(pdf_path)
+        directory = os.path.dirname(csv_path)
+        filename = os.path.basename(csv_path)
         
         return send_from_directory(
             directory,
             filename,
             as_attachment=True,
-            download_name="patient_tracker_export.pdf",
-            mimetype="application/pdf"
+            download_name="patient_tracker_export.csv",
+            mimetype="text/csv"
         )
     except Exception as e:
         traceback.print_exc()

@@ -46,56 +46,52 @@ class TestPriorAuthTracker(unittest.TestCase):
         self.assertLessEqual(len(supporting_med), 5)
 
     def test_tracker_export_runs(self):
-        """Verify that generate_tracker_export can execute without errors and generates files with 13 columns."""
+        """Verify that generate_tracker_export can execute without errors and generates files with 12 columns."""
         import csv
         # We can pass a dummy patient ID that does not exist to verify the fallback compilation logic
-        pdf_path = generate_tracker_export(["99999"])
-        self.assertTrue(os.path.exists(pdf_path))
+        csv_path = generate_tracker_export(["99999"])
+        self.assertTrue(os.path.exists(csv_path))
+        self.assertTrue(csv_path.endswith(".csv"))
         
-        tsv_path = pdf_path.replace(".pdf", ".tsv")
-        self.assertTrue(os.path.exists(tsv_path))
-        
-        # Verify the TSV columns match our 13-column schema exactly
+        # Verify the CSV columns match our 12-column schema exactly
         try:
-            with open(tsv_path, "r", encoding="utf-8") as f:
-                reader = csv.reader(f, delimiter="\t")
+            with open(csv_path, "r", encoding="utf-8") as f:
+                reader = csv.reader(f, delimiter=",")
                 rows = list(reader)
                 
                 columns = rows[0]
                 expected_columns = [
-                    "Patient ID", "Patient Name", "DOB", "Department", "CPT Code",
+                    "Patient ID", "Patient Name", "Department", "CPT/HCPC Code",
                     "Procedure/Medicine Name", "Provider", "Insurance Type", "Policy Name",
                     "extraction expectation", "likelihood expectations", "attachments",
                     "post-attachment likelihood"
                 ]
                 
-                self.assertEqual(len(columns), 13)
+                self.assertEqual(len(columns), 12)
                 self.assertEqual(columns, expected_columns)
                 
                 # Check data row format
                 self.assertGreater(len(rows), 1)
                 data_fields = rows[1]
-                self.assertEqual(len(data_fields), 13)
+                self.assertEqual(len(data_fields), 12)
                 self.assertEqual(data_fields[0], "99999") # Patient ID
         except Exception as e:
-            self.fail(f"TSV schema verification failed: {e}")
-        
-        # Clean up generated test outputs
-        try:
-            os.remove(pdf_path)
-            os.remove(tsv_path)
-        except Exception:
-            pass
+            self.fail(f"CSV schema verification failed: {e}")
+        finally:
+            # Clean up generated test outputs
+            try:
+                os.remove(csv_path)
+            except Exception:
+                pass
 
     def test_tracker_fallback_rich_fields(self):
-        """Verify that fallback data fields are rich and contain no raw HTML tags in the TSV."""
+        """Verify that fallback data fields are rich and contain no raw HTML tags in the CSV."""
         import csv
-        pdf_path = generate_tracker_export(["99999"])
-        tsv_path = pdf_path.replace(".pdf", ".tsv")
+        csv_path = generate_tracker_export(["99999"])
         
         try:
-            with open(tsv_path, "r", encoding="utf-8") as f:
-                reader = csv.reader(f, delimiter="\t")
+            with open(csv_path, "r", encoding="utf-8") as f:
+                reader = csv.reader(f, delimiter=",")
                 rows = list(reader)
                 
             self.assertGreater(len(rows), 1)
@@ -110,9 +106,9 @@ class TestPriorAuthTracker(unittest.TestCase):
                 self.assertNotIn("</font>", cell)
                 
             # Verify clinical expectations and details are richly populated
-            extraction = data_row[9]  # extraction expectation
-            likelihood = data_row[10] # likelihood expectations
-            post_likelihood = data_row[12] # post-attachment likelihood
+            extraction = data_row[8]  # extraction expectation
+            likelihood = data_row[9]  # likelihood expectations
+            post_likelihood = data_row[11] # post-attachment likelihood
             
             # Since patient 99999 is a dummy, it uses the fallback path
             self.assertIn("Expected Service:", extraction)
@@ -123,10 +119,53 @@ class TestPriorAuthTracker(unittest.TestCase):
         finally:
             # Clean up generated test outputs
             try:
-                os.remove(pdf_path)
-                os.remove(tsv_path)
+                os.remove(csv_path)
             except Exception:
                 pass
+
+    def test_hcpcs_labeling_in_tracker(self):
+        """Verify that medication cases with HCPCS/HCPC codes are dynamically labeled as HCPC instead of CPT."""
+        import csv
+        from unittest.mock import patch
+        
+        mock_case = {
+            "test_case_num": "88888",
+            "department": "medication",
+            "cpt_code": "J0897",
+            "procedure": "J0897 Infusion",
+            "outcome": "approval",
+            "details": "Requires documented failure of previous biotherapeutic therapies."
+        }
+        
+        with patch("src.data.loader.get_case_details", return_value=mock_case):
+            csv_path = generate_tracker_export(["88888"])
+            
+            try:
+                self.assertTrue(os.path.exists(csv_path))
+                
+                with open(csv_path, "r", encoding="utf-8") as f:
+                    reader = csv.reader(f, delimiter=",")
+                    rows = list(reader)
+                    
+                self.assertGreater(len(rows), 1)
+                data_row = rows[1]
+                
+                # Check that CPT/HCPC Code column has J0897
+                self.assertEqual(data_row[3], "J0897")
+                
+                # Check that fallback extraction expectation column uses HCPC label instead of CPT
+                self.assertIn("HCPC: J0897", data_row[8])
+                self.assertNotIn("CPT: J0897", data_row[8])
+                
+                # Check that fallback likelihood expectations column uses HCPC label instead of CPT
+                self.assertIn("HCPC J0897", data_row[9])
+                self.assertNotIn("CPT J0897", data_row[9])
+                
+            finally:
+                try:
+                    os.remove(csv_path)
+                except Exception:
+                    pass
 
 if __name__ == "__main__":
     unittest.main()

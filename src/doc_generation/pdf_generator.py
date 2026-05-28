@@ -637,12 +637,12 @@ def create_annotator_summary_pdf(patient_id: str, annotator_summary, case_detail
     
     case_text = annotator_summary.case_explanation
     
-    target_match = re.search(r"Target Procedure:\s*CPT\s*(\d+)\s*[-–]\s*([^\n]+)", case_text, re.IGNORECASE)
+    target_match = re.search(r"Target Procedure:\s*(?:CPT|HCPCS|HCPC)?\s*\b([A-Za-z]?\d{4,5})\b\s*[-–]\s*([^\n]+)", case_text, re.IGNORECASE)
     if target_match:
         target_cpt = target_match.group(1).strip()
         target_cpt_desc = target_match.group(2).strip()
     
-    cpt_matches = re.findall(r"CPT\s*(\d+)\s*[-–:]\s*([^\n,;]+)", case_text, re.IGNORECASE)
+    cpt_matches = re.findall(r"(?:CPT|HCPCS|HCPC)\s*\b([A-Za-z]?\d{4,5})\b\s*[-–:]\s*([^\n,;]+)", case_text, re.IGNORECASE)
     for code, desc in cpt_matches:
         code_entry = f"{code.strip()} - {desc.strip()}"
         if code_entry not in all_cpt_codes:
@@ -666,7 +666,7 @@ def create_annotator_summary_pdf(patient_id: str, annotator_summary, case_detail
         if hasattr(patient_persona, "bio_narrative") and patient_persona.bio_narrative:
             bio_text = patient_persona.bio_narrative
             
-            bio_cpt_matches = re.findall(r"CPT\s*(\d+)\s*[-–:]\s*([^\n,;]+)", bio_text, re.IGNORECASE)
+            bio_cpt_matches = re.findall(r"(?:CPT|HCPCS|HCPC)\s*\b([A-Za-z]?\d{4,5})\b\s*[-–:]\s*([^\n,;]+)", bio_text, re.IGNORECASE)
             for code, desc in bio_cpt_matches:
                 code_entry = f"{code.strip()} - {desc.strip()}"
                 if code_entry not in all_cpt_codes:
@@ -1362,7 +1362,7 @@ def create_persona_pdf(patient_id: str, patient_name: str, persona: object, gene
         if therapies_list:
             Story.append(Paragraph("<b>Therapy & Behavioral Health</b>", style_h3))
             Story.append(Spacer(1, 5))
-            th_data = [["Type", "CPT Code", "Provider / Facility", "Frequency / Status", "ICD-10 Diagnoses"]]
+            th_data = [["Type", "CPT/HCPC Code", "Provider / Facility", "Frequency / Status", "ICD-10 Diagnoses"]]
             for th in therapies_list:
                 provider = getattr(th, 'provider', '') or ''
                 facility = getattr(th, 'facility', '') or ''
