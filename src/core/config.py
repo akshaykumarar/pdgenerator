@@ -1,5 +1,6 @@
 import os
 import re
+# pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
 
 # Load environment variables from cred/.env relative to project root
@@ -64,6 +65,11 @@ def get_patient_root(patient_id: str, patient_name: str | None = None, prefer_na
         from ..data import loader as data_loader
         case_data = data_loader.get_case_details(patient_id) or {}
         cpt_code = str(case_data.get("cpt_code", "Unknown")).strip() or "Unknown"
+        if cpt_code == "Unknown" or not cpt_code:
+            cpt_map = data_loader.get_cpt_code_map()
+            procedure = str(case_data.get("procedure", "")).lower().strip()
+            if procedure and procedure in cpt_map.get("by_procedure", {}):
+                cpt_code = cpt_map["by_procedure"][procedure]
         outcome = str(case_data.get("outcome", "Unknown")).strip() or "Unknown"
     except Exception:
         cpt_code = "Unknown"

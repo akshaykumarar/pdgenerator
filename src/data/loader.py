@@ -19,8 +19,10 @@ def _normalize_text(val) -> str:
         return ""
 
 
-def _extract_cpt_code(*values) -> str:
-    """Try to extract a 5-digit CPT code or HCPCS code (e.g. J0897, Q5124) from any provided value."""
+def _extract_cpt_code(*values: str) -> str:
+    """Try to extract a 5-digit CPT code or HCPCS code (e.g. J0897, Q5124) from any provided value.
+    If regex search fails, falls back to mapping by procedure name in cpt_code_map.json.
+    """
     for v in values:
         text = _normalize_text(v)
         if not text:
@@ -33,6 +35,14 @@ def _extract_cpt_code(*values) -> str:
         m_cpt = re.search(r"\b(\d{5})\b", text)
         if m_cpt:
             return m_cpt.group(1)
+            
+    # Fallback to cpt_code_map.json lookup by procedure/text name
+    cpt_map = get_cpt_code_map()
+    by_procedure = cpt_map.get("by_procedure", {})
+    for v in values:
+        text = _normalize_text(v).lower().strip()
+        if text in by_procedure:
+            return by_procedure[text]
     return ""
 
 
@@ -58,7 +68,7 @@ def refresh_cpt_code_map() -> dict:
 
             for _, row in df.iterrows():
                 procedure = _normalize_text(row.get('Procedure', '')) or _normalize_text(row.get('Code', ''))
-                cpt_code = _extract_cpt_code(row.get('CPT Code', ''), procedure, row.get('Test Case Details', ''))
+                cpt_code = _extract_cpt_code(row.get('CPT Code', ''), row.get('Code', ''), procedure, row.get('Test Case Details', ''))
                 if not cpt_code:
                     continue
 
@@ -99,7 +109,7 @@ def _get_patient_id_column(df: pd.DataFrame) -> str:
     if 'Patient ID' in df.columns:
         return 'Patient ID'
     
-    # Heuristic Search (Look for 'Unnamed' column with numeric IDs > 100)
+    # Heuristic Search (Look for 'Unnamed' column with numeric IDs >= 1)
     for col in df.columns:
         if 'Unnamed' in str(col):
             # Check the first 5 non-null values
@@ -107,7 +117,7 @@ def _get_patient_id_column(df: pd.DataFrame) -> str:
             for val in valid_vals:
                 try:
                     num = int(float(val))
-                    if num > 100:
+                    if num >= 1:
                         return col
                 except (ValueError, TypeError):
                     continue
@@ -152,7 +162,11 @@ def load_patient_case(target_id: str):
                     # Found Match
                     procedure = str(row.get('Procedure', '')) or str(row.get('Code', 'Unknown'))
                     if not procedure.strip(): procedure = "Unknown"
-                    cpt_code = _extract_cpt_code(row.get('CPT Code', ''), procedure, row.get('Test Case Details', ''))
+                    cpt_code = _extract_cpt_code(row.get('CPT Code', ''), row.get('Code', ''), procedure, row.get('Test Case Details', ''))
+                    if not cpt_code:
+                        print(f"[DEBUG] CPT extraction failed for patient {p_id}. "
+                              f"Attempted values: CPT Code={row.get('CPT Code')}, Code={row.get('Code')}, "
+                              f"procedure={procedure}, details={row.get('Test Case Details')}")
                     department = _normalize_text(row.get('Department', ''))
                     test_case_number = _normalize_text(row.get('Test Case #', ''))
                     expected_outcome = _normalize_text(row.get('Expected Result', 'Unknown'))

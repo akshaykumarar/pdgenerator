@@ -494,6 +494,13 @@ Workflow continues gracefully.
 
 # Maintenance & Updates
 
+### v8.0 Non-AI Scanned PDF Look & CPT Fixes (2026-06-04)
+* **Scan/Non-AI-Friendly Toggle**: Added a post-processing visual scan filter (`src/doc_generation/scan_filter.py`) using fitz (PyMuPDF), Pillow, and NumPy. Converts clean vector PDFs to flat, image-only scanned documents with configurable skews, noise, brightness shadows, and dust/speckle artifacts (Light, Medium, Heavy presets). Fully integrated in `/api/generate`, `/api/generate_from_content`, `/api/generate_all` and the web UI.
+* **CPT Code Naming & Low ID Fix**: Resolved the "Unknown" CPT folder naming bug by passing both `CPT Code` and `Code` Excel columns during extraction, and adding fallback resolution to `cpt_code_map.json` by matching procedure names. Lowered patient ID heuristic threshold to `>= 1` to correctly parse low-numeric patient IDs (e.g. 1-99).
+* **Likelihood Calibration**: Updated prompts (`src/ai/prompts.py`) to distribute clinical evidence between the Patient Persona and supporting documents for approvals/moderate cases. Ensured that the Patient Persona alone represents a moderate case, and require supporting documents to raise the score. Enforced strict calibrated target likelihood ranges in the concise summary generation instructions.
+* **Macro-Gap Injection**: Added a new `Macro-Gap` archetype class (MG-001/MG-002) for denial cases, allowing the system to omit specialist notes or critical diagnostic reports. Updated the selection logic to always include at least one macro-level gap.
+* **Medication Prompt Updates**: Added minor adjustments to the medication prompt guidelines to clarify that "procedure" refers to drug administration, explicitly require step-therapy formulary exception details, and pattern medication-specific encounter records (e.g., infusion center visits).
+
 ### v7.0 Prior Authorization Tracker CSV Export Transition (2026-05-22)
 * **High-Fidelity CSV Exporter**: Replaced the ReportLab landscape PDF and companion TSV with a single, premium standard CSV file (`patient_tracker_export.csv`) located directly inside `generated_output/patient-data/`.
 * **HTML Sanitization**: Ensured all cells in the exported CSV are completely sanitized of HTML tags, using standard newlines (`\n`) and plain text bullets (`- `) to ensure compatibility with Microsoft Excel copy-pasting.

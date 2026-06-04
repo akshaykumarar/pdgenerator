@@ -348,6 +348,16 @@
           <label class="flex items-center gap-1.5 text-xs cursor-pointer"><input type="checkbox" id="chk-reports" checked class="lg-chk"> Reports</label>
           <label class="flex items-center gap-1.5 text-xs cursor-pointer"><input type="checkbox" id="chk-summary" checked class="lg-chk"> Summary</label>
         </div>
+        <div class="flex items-center justify-between border border-gray-200 px-3 py-1.5 rounded bg-gray-50 text-[10px]">
+          <label class="flex items-center gap-1.5 text-gray-500 cursor-pointer select-none">
+            <input type="checkbox" id="chk-scan-mode" class="w-2.5 h-2.5 rounded lg-chk"> Scanned/Non-AI Look
+          </label>
+          <select id="scan-intensity-select" class="text-[9px] border border-gray-200 rounded px-1 py-0.5 bg-white text-gray-600 focus:outline-none">
+            <option value="light">Light</option>
+            <option value="medium" selected>Medium</option>
+            <option value="heavy">Heavy</option>
+          </select>
+        </div>
 
         <button id="btn-generate" onclick="onGenerateClick()"
           class="w-full py-2.5 bg-gray-900 text-white text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-gray-700 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed rounded">
@@ -1095,10 +1105,17 @@
 
       try {
         await saveInsuranceSelection();
+        let scanMode = false;
+        if (document.getElementById('chk-scan-mode')?.checked) {
+          scanMode = {
+            enabled: true,
+            intensity: document.getElementById('scan-intensity-select')?.value || 'medium'
+          };
+        }
         const body = {
           patient_id: currentPatientId, feedback: document.getElementById('feedback-input').value,
           generation_mode: { persona: document.getElementById('chk-persona').checked, reports: document.getElementById('chk-reports').checked, summary: document.getElementById('chk-summary').checked },
-
+          scan_mode: scanMode
         };
         const r = await fetch(`${API}/api/generate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const d = await r.json(); currentJobId = d.job_id; logOffset = 0;
@@ -1411,7 +1428,14 @@
 
       document.getElementById('log-dot').style.background = '#3b82f6';
       try {
-        const body = { patient_id: currentPatientId, generation_mode: previewGenerationMode, documents: documents, persona: previewPayload?.patient_persona || null };
+        let scanMode = false;
+        if (document.getElementById('chk-scan-mode')?.checked) {
+          scanMode = {
+            enabled: true,
+            intensity: document.getElementById('scan-intensity-select')?.value || 'medium'
+          };
+        }
+        const body = { patient_id: currentPatientId, generation_mode: previewGenerationMode, documents: documents, persona: previewPayload?.patient_persona || null, scan_mode: scanMode };
         const r = await fetch(`${API}/api/generate_from_content`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const d = await r.json(); currentJobId = d.job_id; logOffset = 0; appendLog(`📋 Render job: ${currentJobId}`);
         pollTimer = setInterval(() => pollJob(currentJobId), 2000);
@@ -1475,14 +1499,14 @@
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'patient_tracker_export.pdf';
+        a.download = 'patient_tracker_export.csv';
         document.body.appendChild(a);
         a.click();
         a.remove();
         window.URL.revokeObjectURL(url);
         
-        appendLog('✅ Patient Tracker Export PDF downloaded successfully.');
-        appendLog('📂 Files saved to generated_output/patient-data/patient_tracker_export.pdf and .tsv');
+        appendLog('✅ Patient Tracker Export CSV downloaded successfully.');
+        appendLog('📂 File saved to generated_output/patient-data/patient_tracker_export.csv');
       } catch (e) {
         appendLog('❌ Patient Tracker Export failed: ' + e.message);
         alert('Patient Tracker Export failed: ' + e.message);
@@ -1553,10 +1577,18 @@
           }
         };
       });
+      let scanMode = false;
+      if (document.getElementById('chk-scan-mode')?.checked) {
+        scanMode = {
+          enabled: true,
+          intensity: document.getElementById('scan-intensity-select')?.value || 'medium'
+        };
+      }
       const body = {
         patients,
         feedback: defaultFeedback,
-        generation_mode: defaultMode
+        generation_mode: defaultMode,
+        scan_mode: scanMode
       };
       try {
         const r = await fetch(`${API}/api/generate_all`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });

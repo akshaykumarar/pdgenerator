@@ -291,6 +291,11 @@ Handles compiling clinical Prior Authorization patient metrics for a selected su
   12. `post-attachment likelihood` (incorporates final likelihood_change_with_documents, Correct Items, and Gaps/Issues)
 - **Data Integrity and Persona PDF Exclusions**: Reads insurance details directly from the `payer` block (with fallback to `insurance`) and separates Provider and Policy Name into independent columns. Filters out all version-suffixed persona PDFs case-insensitively checking for `"persona"` in filenames.
 
+### Visual Scan Filter (`src/doc_generation/scan_filter.py`)
+
+Handles post-processing simulation to turn clean, selectable vector PDFs into flat, image-only scanned-looking files.
+- **Conversion Pipeline**: Converts each PDF page into a high-DPI image buffer using PyMuPDF (`fitz`), skews/rotates the image slightly to simulate feeding errors, introduces Gaussian sensor noise, applies a lighting gradient overlay for uneven scanner shadows, adds optional paper tints, and compiles the images back into an image-only PDF.
+
 ### UI Layer (`ui/`)
 
 | File | Theme | Description |

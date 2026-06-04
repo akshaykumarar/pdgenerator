@@ -12553,482 +12553,6 @@
     },
     "gender_specific_history": "PSA 1.6 ng/mL (2025-10-12) per PCP records; no prior prostate biopsy. No lower urinary tract symptoms documented. Routine prostate screening discussed annually."
   },
-  "272": {
-    "first_name": "Monica",
-    "last_name": "Geller",
-    "gender": "female",
-    "dob": "1964-09-18",
-    "address": "4123 Dunlavy St, Houston, TX 77006",
-    "telecom": "713-555-0188",
-    "race": "White",
-    "height": "5 ft 4 in",
-    "weight": "158 lbs",
-    "maritalStatus": "Married",
-    "multipleBirthBoolean": false,
-    "multipleBirthInteger": 1,
-    "photo": "placeholder_patient_photo.png",
-    "communication": {
-      "language": "English",
-      "preferred": true
-    },
-    "contact": {
-      "relationship": "Spouse",
-      "name": "Chandler Bing",
-      "telecom": "713-555-0176",
-      "address": "4123 Dunlavy St, Houston, TX 77006",
-      "gender": "male",
-      "organization": "N/A",
-      "period_start": "2019-10-26",
-      "period_end": "ongoing"
-    },
-    "provider": {
-      "generalPractitioner": "Elena Morales, MD",
-      "formatted_npi": "1649027531",
-      "managingOrganization": "Houston Methodist Primary Care Group - River Oaks",
-      "address": "2201 W Holcombe Blvd, Suite 320, Houston, TX 77030",
-      "phone": "713-555-0119"
-    },
-    "link": {
-      "other_patient": "N/A",
-      "link_type": "N/A"
-    },
-    "payer": {
-      "payer_id": "J1113",
-      "payer_name": "UnitedHealthcare",
-      "plan_name": "Medicare Advantage",
-      "plan_type": "Medicare Advantage",
-      "member_id": "MBR-192451",
-      "policy_number": "POL-2026-2854",
-      "effective_date": "2026-01-01",
-      "termination_date": "ongoing",
-      "copay_amount": "$35",
-      "deductible_amount": "$750"
-    },
-    "expected_procedure_date": "2026-05-12",
-    "procedure_requested": "Colonoscopy with Biopsy, Single or Multiple",
-    "procedure_facility": {
-      "facility_name": "Houston Methodist Hospital",
-      "street_address": "6565 Fannin St",
-      "city": "Houston",
-      "state": "TX",
-      "zip_code": "77030",
-      "department": "Digestive Diseases Center / Endoscopy"
-    },
-    "pa_request": {
-      "requesting_provider": "Aisha Rahman, MD, FACG",
-      "urgency_level": "Pre-Service Routine",
-      "clinical_justification": "Patient has persistent change in bowel habits with intermittent hematochezia/melena, associated fatigue and unintentional weight loss. FIT is positive and CBC shows anemia pattern consistent with iron deficiency; CT demonstrates sigmoid colonic wall thickening. Colonoscopy with biopsy is requested to localize bleeding source and obtain tissue diagnosis to guide next-step management while considering comorbid hypertension/GERD in peri-procedural planning.",
-      "supporting_diagnoses": [
-        "R19.4 - Change in bowel habit",
-        "K92.1 - Melena",
-        "D50.9 - Iron deficiency anemia, unspecified",
-        "R63.4 - Abnormal weight loss"
-      ],
-      "previous_treatments": "Dietary fiber and hydration increase, polyethylene glycol bowel regimen, short course topical hydrocortisone for suspected hemorrhoidal irritation, and initiation of oral iron supplementation after anemia identified.",
-      "expected_outcome": "Diagnostic clarification with direct visualization and biopsy if indicated to guide targeted management.",
-      "units_requested": "1"
-    },
-    "bio_narrative": "Monica Geller is a 61-year-old woman living in Houston, Texas, who is meticulous about routines and tends to push through symptoms until they disrupt her day. Over the past 5\u20136 months she noticed a persistent change in bowel habits (R19.4), alternating between constipation with straining and episodes of looser stools. During this period she also began seeing intermittent dark stools and occasional red blood mixed with stool (K92.1). She initially attributed symptoms to stress and diet changes, but over time she developed progressive fatigue and an unintentional weight loss (R63.4), prompting her to seek care. At her primary care visit on 2026-02-18, she described ongoing cramping and bloating with intermittent bleeding. Conservative measures were started, including a bowel regimen with polyethylene glycol and diet counseling, and she used a short course of rectal hydrocortisone for suspected hemorrhoidal irritation (past use). Given the persistence and pattern of bleeding, her PCP ordered a fecal immunochemical test and laboratory evaluation. On 2026-03-06, FIT returned positive and CBC showed a mild microcytic anemia pattern consistent with iron deficiency (D50.9). A CT abdomen/pe ... (truncated)",
-    "has_fit_fobt_result": true,
-    "medications": [
-      {
-        "brand": "Norvasc",
-        "generic_name": "Amlodipine 5 mg",
-        "dosage": "1 tablet by mouth daily",
-        "qty": "90 tablets",
-        "prescribed_by": "Elena Morales, MD",
-        "status": "current",
-        "start_date": "2023-08-10",
-        "end_date": "ongoing",
-        "reason": "Blood pressure control for I10"
-      },
-      {
-        "brand": "Prilosec OTC",
-        "generic_name": "Omeprazole 20 mg",
-        "dosage": "1 capsule by mouth daily before breakfast",
-        "qty": "28 capsules",
-        "prescribed_by": "Elena Morales, MD",
-        "status": "ongoing",
-        "start_date": "2021-05-02",
-        "end_date": "ongoing",
-        "reason": "GERD symptom control for K21.9"
-      },
-      {
-        "brand": "MiraLAX",
-        "generic_name": "Polyethylene glycol 3350 17 g/scoop",
-        "dosage": "17 g mixed in 8 oz water by mouth daily; titrate to soft stool",
-        "qty": "510 g bottle",
-        "prescribed_by": "Elena Morales, MD",
-        "status": "current",
-        "start_date": "2026-02-18",
-        "end_date": "ongoing",
-        "reason": "Constipation component of change in bowel habits (R19.4)"
-      },
-      {
-        "brand": "Ferrous Sulfate",
-        "generic_name": "Ferrous sulfate 325 mg (65 mg elemental iron)",
-        "dosage": "1 tablet by mouth every other day with food",
-        "qty": "45 tablets",
-        "prescribed_by": "Elena Morales, MD",
-        "status": "current",
-        "start_date": "2026-03-07",
-        "end_date": "ongoing",
-        "reason": "Iron deficiency anemia (D50.9) in setting of GI blood loss symptoms (K92.1)"
-      },
-      {
-        "brand": "Anusol-HC",
-        "generic_name": "Hydrocortisone 2.5% rectal cream",
-        "dosage": "Apply rectally twice daily as needed for up to 7 days",
-        "qty": "30 g",
-        "prescribed_by": "Elena Morales, MD",
-        "status": "past",
-        "start_date": "2026-02-18",
-        "end_date": "2026-02-25",
-        "reason": "Symptomatic relief during suspected hemorrhoidal irritation while evaluating K92.1"
-      },
-      {
-        "brand": "Tylenol",
-        "generic_name": "Acetaminophen 500 mg",
-        "dosage": "1 tablet by mouth every 6 hours as needed for pain; max 3,000 mg/day",
-        "qty": "30 tablets",
-        "prescribed_by": "Elena Morales, MD",
-        "status": "ongoing",
-        "start_date": "2024-01-15",
-        "end_date": "ongoing",
-        "reason": "Intermittent abdominal discomfort; avoids NSAIDs due to GI bleeding symptoms (K92.1)"
-      },
-      {
-        "brand": "Zofran ODT",
-        "generic_name": "Ondansetron ODT 4 mg",
-        "dosage": "Dissolve 1 tablet on tongue every 8 hours as needed for nausea",
-        "qty": "10 tablets",
-        "prescribed_by": "Aisha Rahman, MD, FACG",
-        "status": "current",
-        "start_date": "2026-03-17",
-        "end_date": "ongoing",
-        "reason": "Nausea prevention related to bowel preparation planning for upcoming colonoscopy (CPT 45380)"
-      }
-    ],
-    "allergies": [
-      {
-        "allergen": "Penicillin",
-        "allergy_type": "Drug",
-        "reaction": "Hives and pruritic rash",
-        "severity": "Moderate",
-        "onset_date": "1998-04-12"
-      },
-      {
-        "allergen": "Shellfish",
-        "allergy_type": "Food",
-        "reaction": "Lip swelling and throat tightness",
-        "severity": "Severe",
-        "onset_date": "2009-07-20"
-      },
-      {
-        "allergen": "Seasonal pollen",
-        "allergy_type": "Environmental",
-        "reaction": "Sneezing, watery eyes",
-        "severity": "Mild",
-        "onset_date": "Unknown"
-      }
-    ],
-    "vaccinations": [
-      {
-        "vaccine_name": "Influenza (Quadrivalent)",
-        "vaccine_type": "Inactivated",
-        "date_administered": "2025-10-05",
-        "administered_by": "Houston Methodist Primary Care Group - River Oaks",
-        "dose_number": "1",
-        "reason": "Routine Immunization"
-      },
-      {
-        "vaccine_name": "COVID-19 mRNA (2025-2026 formulation)",
-        "vaccine_type": "mRNA",
-        "date_administered": "2025-09-20",
-        "administered_by": "CVS Pharmacy - Houston, TX",
-        "dose_number": "Booster",
-        "reason": "Routine Immunization"
-      },
-      {
-        "vaccine_name": "Pneumococcal PCV20",
-        "vaccine_type": "Subunit",
-        "date_administered": "2025-04-14",
-        "administered_by": "Houston Methodist Primary Care Group - River Oaks",
-        "dose_number": "1",
-        "reason": "Routine Immunization"
-      },
-      {
-        "vaccine_name": "Tdap",
-        "vaccine_type": "Toxoid",
-        "date_administered": "2022-06-11",
-        "administered_by": "Walgreens Pharmacy - Houston, TX",
-        "dose_number": "1",
-        "reason": "Catch-up"
-      },
-      {
-        "vaccine_name": "Recombinant Zoster Vaccine (Shingrix)",
-        "vaccine_type": "Subunit",
-        "date_administered": "2023-01-10",
-        "administered_by": "Houston Methodist Primary Care Group - River Oaks",
-        "dose_number": "1",
-        "reason": "Routine Immunization"
-      },
-      {
-        "vaccine_name": "Recombinant Zoster Vaccine (Shingrix)",
-        "vaccine_type": "Subunit",
-        "date_administered": "2023-03-14",
-        "administered_by": "Houston Methodist Primary Care Group - River Oaks",
-        "dose_number": "2",
-        "reason": "Routine Immunization"
-      }
-    ],
-    "therapies": [
-      {
-        "therapy_type": "Physical",
-        "cpt_code": "97110",
-        "cpt_description": "Therapeutic exercises to develop strength and endurance, range of motion and flexibility",
-        "icd10_codes": [
-          "R19.4 - Change in bowel habit"
-        ],
-        "provider": "Jordan Blake, DPT",
-        "provider_npi": "1780934612",
-        "facility": "Houston Methodist Outpatient Rehabilitation - West Houston",
-        "start_date": "2026-01-19",
-        "end_date": "2026-02-27",
-        "frequency": "1x/week",
-        "status": "Completed",
-        "reason": "Education and therapeutic exercise/breathing mechanics to reduce straining and support bowel regularity during evaluation of R19.4.",
-        "notes": "Completed 6 visits focusing on diaphragmatic breathing, pelvic floor relaxation cues, toileting posture, and gentle mobility. Patient reported reduced straining episodes but ongoing intermittent bleeding prompted continued medical workup and GI referral."
-      }
-    ],
-    "behavioral_notes": "Patient is highly routine-oriented and reports strong adherence to daily medications and bowel regimen when given clear instructions. Diet is generally balanced but tends to restrict intake when stressed; currently increasing fiber and fluids as advised. Walks 3\u20134 times per week but has reduced activity due to fatigue. Never smoker, drinks alcohol occasionally, denies illicit drug use. Reports mild health-related anxiety around bleeding and upcoming testing but no history of depression; uses planning and checklists to cope.",
-    "encounters": [
-      {
-        "encounter_date": "2026-02-18",
-        "encounter_type": "Office Visit",
-        "purpose_of_visit": "Evaluation of 5\u20136 months of bowel habit changes with intermittent blood in stool and abdominal cramping.",
-        "provider": "Elena Morales, MD",
-        "provider_npi": "1649027531",
-        "facility": "Houston Methodist Primary Care Group - River Oaks",
-        "vital_signs": {
-          "recorded_date": "2026-02-18",
-          "blood_pressure": "138/84 mmHg",
-          "heart_rate": "78 bpm",
-          "blood_sugar_fasting": null,
-          "blood_sugar_postprandial": null,
-          "bmi": "27.1 kg/m\u00b2",
-          "oxygen_saturation": "98%",
-          "temperature": "98.4\u00b0F",
-          "respiratory_rate": "16 breaths/min"
-        },
-        "chief_complaint": "My stools have changed and I\u2019ve noticed blood on and off.",
-        "doctor_note": "HPI: 61F presents with ~5\u20136 months of change in bowel habits with alternating constipation and looser stools. Reports intermittent dark stools and occasional red blood mixed with stool. Mild intermittent LLQ cramping and bloating. Notes reduced appetite and thinks she has lost weight over the last few months. Denies syncope. No prior colonoscopy per patient.\n\nReview of Systems: GI positive for change in bowel habits, intermittent blood in stool, bloating, cramping. Negative for persistent vomiting. Constitutional positive for fatigue and weight loss by report. CV/Resp negative for chest pain, dyspnea.\n\nPhysical Exam: General: alert, mildly anxious, no acute distress. Abdomen: soft, mild LLQ tenderness without rebound/guarding; no palpable mass. Skin: warm/dry, no jaundice. Cardiac: RRR, no murmurs. Lungs: clear.\n\nAssessment: Change in bowel habit (R19.4) with reported melena/hematochezia (K92.1) and abnormal weight loss (R63.4). Controlled hypertension (I10) and GERD (K21.9) stable.\n\nPlan: Order CBC and CMP; order FIT. Start polyethylene glycol daily and counsel on hydration/fiber. Short course hydrocortisone rectal cream for symptomatic irritation (past). Avoid NSAIDs. Place GI re ... (truncated)",
-        "observations": [
-          "Mild LLQ tenderness on palpation",
-          "Reports intermittent dark stools and red blood mixed with stool",
-          "No orthostatic symptoms reported at visit"
-        ],
-        "procedures_performed": [
-          "CPT 99214 - Office or other outpatient visit, established patient, level 4"
-        ],
-        "diagnoses": [
-          "R19.4 - Change in bowel habit",
-          "K92.1 - Melena",
-          "R63.4 - Abnormal weight loss",
-          "I10 - Essential (primary) hypertension",
-          "K21.9 - Gastro-esophageal reflux disease without esophagitis"
-        ],
-        "medications_prescribed": [
-          "Polyethylene glycol 3350 17 g daily",
-          "Hydrocortisone 2.5% rectal cream BID PRN x 7 days"
-        ],
-        "care_team": [
-          "Elena Morales, MD",
-          "Clinic RN staff"
-        ],
-        "progress_notes": "Initial presentation; patient starting conservative bowel regimen while diagnostic workup initiated. GI referral placed due to symptom duration and bleeding history.",
-        "follow_up_instructions": "Follow up in 2\u20133 weeks to review FIT and labs; sooner for worsening bleeding, dizziness, fainting, or severe abdominal pain."
-      },
-      {
-        "encounter_date": "2026-03-07",
-        "encounter_type": "Telehealth",
-        "purpose_of_visit": "Review of positive FIT and lab results; ongoing fatigue and intermittent bleeding symptoms.",
-        "provider": "Elena Morales, MD",
-        "provider_npi": "1649027531",
-        "facility": "Houston Methodist Primary Care Group - River Oaks",
-        "vital_signs": null,
-        "chief_complaint": "I\u2019m tired and the bleeding still happens sometimes.",
-        "doctor_note": "HPI: Telehealth follow-up to review results. Patient reports continued intermittent dark/red blood in stool and ongoing fatigue. Bowel movements are somewhat easier with polyethylene glycol, but pattern remains irregular. Denies syncope, chest pain, or shortness of breath.\n\nReview of Systems: GI positive for intermittent blood in stool and irregular bowel habits. Constitutional positive for fatigue. CV/Resp negative.\n\nPhysical Exam (limited by video): Patient appears well, speaking in full sentences, no visible distress.\n\nAssessment: FIT positive with continued symptoms. CBC shows anemia pattern consistent with iron deficiency anemia (D50.9) in setting of bleeding symptoms (K92.1). Change in bowel habits ongoing (R19.4) with reported weight loss (R63.4).\n\nPlan: Start oral iron supplementation every other day. Reinforce avoidance of NSAIDs and continue bowel regimen. Order CT abdomen/pelvis with IV contrast to evaluate weight loss and abdominal discomfort and to support GI workup prior to requested colonoscopy with biopsy (CPT 45380). Confirm GI appointment scheduling. Provide ER precautions for worsening bleeding, dizziness, syncope.",
-        "observations": [
-          "FIT positive reviewed",
-          "Fatigue persists; no acute red flags reported during call"
-        ],
-        "procedures_performed": [
-          "CPT 99442 - Telephone evaluation and management service, 11-20 minutes"
-        ],
-        "diagnoses": [
-          "R19.4 - Change in bowel habit",
-          "K92.1 - Melena",
-          "D50.9 - Iron deficiency anemia, unspecified",
-          "R63.4 - Abnormal weight loss"
-        ],
-        "medications_prescribed": [
-          "Ferrous sulfate 325 mg every other day"
-        ],
-        "care_team": [
-          "Elena Morales, MD"
-        ],
-        "progress_notes": "Objective findings now include FIT positivity and anemia pattern, increasing concern for ongoing GI blood loss. Imaging ordered to support expedited diagnostic pathway ahead of GI evaluation and planned colonoscopy with biopsy.",
-        "follow_up_instructions": "Complete CT scan as scheduled; keep GI consult appointment; follow up after imaging or sooner for worsening symptoms."
-      },
-      {
-        "encounter_date": "2026-03-17",
-        "encounter_type": "Specialist Consult",
-        "purpose_of_visit": "GI consultation for persistent bleeding and bowel habit changes with positive FIT and anemia; plan for diagnostic colonoscopy with biopsy.",
-        "provider": "Aisha Rahman, MD, FACG",
-        "provider_npi": "2391847265",
-        "facility": "Houston Methodist Digestive Diseases Center",
-        "vital_signs": {
-          "recorded_date": "2026-03-17",
-          "blood_pressure": "134/82 mmHg",
-          "heart_rate": "74 bpm",
-          "blood_sugar_fasting": null,
-          "blood_sugar_postprandial": null,
-          "bmi": "26.8 kg/m\u00b2",
-          "oxygen_saturation": "99%",
-          "temperature": "98.2\u00b0F",
-          "respiratory_rate": "14 breaths/min"
-        },
-        "chief_complaint": "I\u2019m still seeing blood and my stomach feels off.",
-        "doctor_note": "HPI: 61F with 5\u20136 months of change in bowel habits (R19.4) and intermittent melena/hematochezia (K92.1). Reports fatigue and unintentional weight loss (R63.4). FIT positive and CBC shows anemia pattern supporting D50.9. Partial improvement in constipation with polyethylene glycol; bleeding persists intermittently. CT A/P shows segmental sigmoid thickening with mild stranding.\n\nReview of Systems: GI positive for intermittent blood in stool, bloating, cramping; negative for persistent vomiting. Constitutional positive for fatigue and weight loss. CV/Resp negative.\n\nPhysical Exam: Abdomen soft with mild LLQ tenderness; no peritoneal signs. Cardiopulmonary exam unremarkable.\n\nAssessment: Persistent symptoms with objective FIT positivity, anemia pattern, and CT findings concerning for colonic mucosal pathology.\n\nPlan: Request colonoscopy with biopsy (CPT 45380) scheduled 2026-05-12 at Houston Methodist Hospital. Discuss bowel prep plan, sedation, and risks including bleeding/perforation. Review medication list; avoid NSAIDs. Provide ondansetron PRN for nausea with prep. Arrange pre-admission testing for comorbidity review (I10, K21.9).",
-        "observations": [
-          "CT reviewed showing sigmoid wall thickening",
-          "Symptoms persist despite conservative bowel regimen"
-        ],
-        "procedures_performed": [
-          "CPT 99204 - Office or other outpatient visit for the evaluation and management of a new patient, level 4"
-        ],
-        "diagnoses": [
-          "R19.4 - Change in bowel habit",
-          "K92.1 - Melena",
-          "D50.9 - Iron deficiency anemia, unspecified",
-          "R63.4 - Abnormal weight loss"
-        ],
-        "medications_prescribed": [
-          "Ondansetron ODT 4 mg q8h PRN nausea"
-        ],
-        "care_team": [
-          "Aisha Rahman, MD, FACG",
-          "GI clinic RN",
-          "Scheduling coordinator"
-        ],
-        "progress_notes": "Escalated evaluation to colonoscopy with biopsy given persistent bleeding symptoms with positive FIT, anemia pattern, and CT sigmoid thickening. Patient demonstrates understanding of prep and follow-up plan.",
-        "follow_up_instructions": "Complete pre-admission testing; follow bowel prep instructions; call clinic for worsening bleeding or new symptoms; follow up 1\u20132 weeks post-procedure for pathology review if biopsies obtained."
-      },
-      {
-        "encounter_date": "2026-03-24",
-        "encounter_type": "Pre-op Evaluation",
-        "purpose_of_visit": "Pre-procedure assessment for planned colonoscopy with biopsy including medication reconciliation and peri-procedural risk review.",
-        "provider": "Noah Kim, MD",
-        "provider_npi": "1124580396",
-        "facility": "Houston Methodist Hospital - Pre-Admission Testing",
-        "vital_signs": {
-          "recorded_date": "2026-03-24",
-          "blood_pressure": "132/80 mmHg",
-          "heart_rate": "72 bpm",
-          "blood_sugar_fasting": null,
-          "blood_sugar_postprandial": null,
-          "bmi": "26.6 kg/m\u00b2",
-          "oxygen_saturation": "98%",
-          "temperature": "98.1\u00b0F",
-          "respiratory_rate": "16 breaths/min"
-        },
-        "chief_complaint": "Pre-procedure check for colonoscopy.",
-        "doctor_note": "HPI: 61F scheduled for colonoscopy with biopsy (CPT 45380) on 2026-05-12 for evaluation of change in bowel habits (R19.4), melena/hematochezia (K92.1), iron deficiency anemia pattern (D50.9), and weight loss (R63.4). Here for pre-admission testing and medication review. No prior anesthesia complications reported. Denies chest pain or shortness of breath with usual activity.\n\nReview of Systems: Negative for fever, dyspnea, chest pain. GI positive for intermittent blood in stool and irregular bowel habits.\n\nPhysical Exam: General well-appearing. Heart RRR. Lungs clear. Abdomen soft, non-distended, mild LLQ tenderness.\n\nAssessment: Patient optimized for planned endoscopy; comorbid HTN (I10) controlled on amlodipine and GERD (K21.9) controlled on omeprazole. Anemia pattern being treated with iron. Allergies reviewed.\n\nPlan: Proceed with planned colonoscopy with biopsy. Continue amlodipine and omeprazole on day of procedure with sip of water unless otherwise instructed by anesthesia. Continue iron up to day before bowel prep; anticipate temporary interruption during prep due to tolerance. Reinforce avoidance of NSAIDs. Review bowel prep hydration and signs of dehydration. Confirm arrang ... (truncated)",
-        "observations": [
-          "Medication list reconciled",
-          "No cardiopulmonary symptoms reported",
-          "Allergies reviewed (penicillin, shellfish)"
-        ],
-        "procedures_performed": [
-          "CPT 99203 - Office or other outpatient visit for the evaluation and management of a new patient, level 3"
-        ],
-        "diagnoses": [
-          "R19.4 - Change in bowel habit",
-          "K92.1 - Melena",
-          "D50.9 - Iron deficiency anemia, unspecified",
-          "R63.4 - Abnormal weight loss",
-          "I10 - Essential (primary) hypertension",
-          "K21.9 - Gastro-esophageal reflux disease without esophagitis"
-        ],
-        "medications_prescribed": [],
-        "care_team": [
-          "Noah Kim, MD",
-          "Pre-admission testing nurse"
-        ],
-        "progress_notes": "Pre-op evaluation completed; comorbidities stable and medication plan reviewed in preparation for the requested colonoscopy with biopsy.",
-        "follow_up_instructions": "Follow GI bowel prep instructions; take BP/GERD meds morning of procedure as reviewed; call for questions; arrive 90 minutes early on 2026-05-12."
-      }
-    ],
-    "images": [
-      {
-        "type": "CT Abdomen and Pelvis with IV Contrast",
-        "date": "2026-03-10",
-        "provider": "Elena Morales, MD",
-        "facility": "Houston Methodist Hospital",
-        "findings": "Segmental circumferential wall thickening of sigmoid colon over ~6 cm with mild pericolonic fat stranding; no obstruction or free air. Findings support endoscopic correlation with colonoscopy and biopsy in workup for R19.4, K92.1, D50.9, and R63.4."
-      }
-    ],
-    "reports": [
-      {
-        "type": "CBC/CMP/FIT",
-        "date": "2026-03-06",
-        "provider": "Elena Morales, MD",
-        "results": "CBC: Hgb 10.9 g/dL, MCV 78 fL, RDW 16.8%, Plt 412k; CMP within normal limits; FIT positive.",
-        "notes": "Results obtained to support diagnostic workup prior to requested colonoscopy with biopsy (CPT 45380) for persistent bleeding and bowel habit changes."
-      }
-    ],
-    "procedures": [
-      {
-        "name": "Esophagogastroduodenoscopy (EGD) diagnostic",
-        "date": "2019-08-22",
-        "provider": "Miguel Santos, MD",
-        "facility": "Houston Methodist Hospital",
-        "reason": "Evaluation of chronic reflux symptoms (K21.9)",
-        "notes": "Mild non-erosive gastritis reported; no complications. Patient remained on PPI therapy."
-      }
-    ],
-    "social_history": {
-      "tobacco_use": "Never",
-      "tobacco_frequency": null,
-      "alcohol_use": "Social/Occasional",
-      "alcohol_frequency": "1-2 drinks/month, usually wine with dinner",
-      "illicit_drug_use": "None",
-      "substance_history": null,
-      "last_medical_visit": "2026-03-24",
-      "last_visit_reason": "Pre-admission testing for planned colonoscopy with biopsy (CPT 45380)",
-      "missed_appointment": false,
-      "missed_appointment_reason": null,
-      "early_visit_reason": "Requested earlier GI evaluation after positive FIT result and persistent fatigue",
-      "mental_health_history": null,
-      "mental_health_current": "GAD-7: 6 (mild anxiety related to health concerns); no SI/HI",
-      "exercise_habits": "Walks 30 minutes 3-4x/week; reduced to 2x/week due to fatigue",
-      "diet_notes": "Increasing fiber (oats/vegetables) and fluids; tends to skip meals when stressed",
-      "family_history_relevant": "Paternal uncle with colorectal cancer in his 60s; mother with hypertension"
-    },
-    "vital_signs_current": {
-      "recorded_date": "2026-03-24",
-      "blood_pressure": "132/80 mmHg",
-      "heart_rate": "72 bpm",
-      "blood_sugar_fasting": null,
-      "blood_sugar_postprandial": null,
-      "bmi": "26.6 kg/m\u00b2",
-      "oxygen_saturation": "98%",
-      "temperature": "98.1\u00b0F",
-      "respiratory_rate": "16 breaths/min"
-    },
-    "gender_specific_history": "G2P2. Last Pap smear 2024-05-02 (reported normal). Last screening mammogram 2025-06-18 (reported normal). Menopause at ~52. No postmenopausal bleeding reported."
-  },
   "266": {
     "first_name": "Roman",
     "last_name": "Wambsgans",
@@ -30855,5 +30379,554 @@
       "respiratory_rate": "16 breaths/min"
     },
     "gender_specific_history": "PSA 1.6 ng/mL on 03-02-2026. Reports routine prostate screening with primary care; no history of BPH treatment, hematuria, or recurrent UTIs."
+  },
+  "272": {
+    "insurance_selection": {
+      "provider_id": "UHC",
+      "plan_type": "Medicare Advantage",
+      "plan_id": "UHC_TX_MA"
+    },
+    "first_name": "Cassian",
+    "last_name": "Andor",
+    "gender": "male",
+    "dob": "03-14-1982",
+    "address": "4821 Fairmount St, Dallas, TX 75219",
+    "telecom": "214-555-0187",
+    "race": "Hispanic",
+    "height": "5 ft 11 in",
+    "weight": "192 lbs",
+    "maritalStatus": "Married",
+    "multipleBirthBoolean": false,
+    "multipleBirthInteger": 1,
+    "photo": "placeholder_patient_photo.png",
+    "communication": {
+      "language": "English",
+      "preferred": true
+    },
+    "contact": {
+      "relationship": "Spouse",
+      "name": "Jyn Erso",
+      "telecom": "214-555-0191",
+      "address": "4821 Fairmount St, Dallas, TX 75219",
+      "gender": "female",
+      "organization": "N/A",
+      "period_start": "06-12-2016",
+      "period_end": "ongoing"
+    },
+    "provider": {
+      "generalPractitioner": "Monica Geller, MD",
+      "formatted_npi": "1437285609",
+      "managingOrganization": "UT Southwestern Medical Center - Family Medicine",
+      "address": "5323 Harry Hines Blvd, Dallas, TX 75390",
+      "phone": "214-555-0101"
+    },
+    "link": {
+      "other_patient": "N/A",
+      "link_type": "N/A"
+    },
+    "payer": {
+      "payer_id": "UHC",
+      "payer_name": "UnitedHealthcare",
+      "provider_abbreviation": "UHC",
+      "provider_policy_url": "https://www.uhcprovider.com/",
+      "plan_name": "Texas AARP Medicare Advantage Plans",
+      "plan_type": "Medicare Advantage",
+      "plan_id": "UHC_TX_MA",
+      "plan_policy_url": "https://www.uhcprovider.com/en/health-plans-by-state/texas-health-plans/tx-medicare-plans/tx-aarp-medcomp-sechorizons.html",
+      "member_id": "MBR-766847",
+      "policy_number": "POL-2026-4315",
+      "effective_date": "01-01-2026",
+      "termination_date": "ongoing",
+      "copay_amount": "$40",
+      "deductible_amount": "$0"
+    },
+    "expected_procedure_date": "07-01-2026",
+    "procedure_requested": "Colonoscopy with Biopsy, Single or Multiple",
+    "procedure_facility": {
+      "facility_name": "UT Southwestern Medical Center - Endoscopy Lab",
+      "street_address": "6201 Harry Hines Blvd",
+      "city": "Dallas",
+      "state": "TX",
+      "zip_code": "75390",
+      "department": "Gastroenterology / Endoscopy"
+    },
+    "pa_request": {
+      "requesting_provider": "Dr. Harris, MD (Gastroenterology)",
+      "urgency_level": "Pre-Service Routine",
+      "clinical_justification": "Persistent GI bleeding and rectal bleeding with chronic diarrhea/stool changes and objective iron deficiency anemia with fatigue/weight loss; FIT positive. Colonoscopy with biopsy (CPT 45380) is requested to localize bleeding source and obtain tissue diagnosis to guide treatment planning; hypertension on amlodipine is noted for sedation planning and monitoring.\n\nObjective evidence: 05-08-2026: Hgb 10.8 g/dL.",
+      "supporting_diagnoses": [
+        "K92.2 - Gastrointestinal hemorrhage, unspecified",
+        "K62.5 - Hemorrhage of anus and rectum",
+        "R19.5 - Other fecal abnormalities",
+        "D50.9 - Iron deficiency anemia, unspecified"
+      ],
+      "previous_treatments": "Dietary counseling (nutrition therapy), PRN loperamide, NSAID avoidance, completed rectal hydrocortisone trial; ongoing symptoms. Iron supplementation initiated after anemia identified.",
+      "expected_outcome": "Direct visualization and histopathologic diagnosis of colonic pathology contributing to bleeding and stool changes to inform next-step management.",
+      "units_requested": "1"
+    },
+    "bio_narrative": "Cassian Andor is a 44-year-old male living in Dallas, Texas, followed by Monica Geller, MD at UT Southwestern Medical Center - Family Medicine. He works full-time in operations/logistics and describes himself as highly structured and goal-oriented; he tracks stool frequency, urgency, and visible blood in a phone note and prefers clear, stepwise plans. Over the past several months he has experienced persistent loose stools and urgency, with intermittent visible blood on wiping and occasional darker stools, accompanied by abdominal cramping. These symptoms have continued despite conservative measures and have progressively impacted his daily routine due to unpredictable urgency. His symptom timeline includes an initial primary care evaluation on 01-06-2026 for weeks of diarrhea with intermittent rectal bleeding (R19.5, K62.5). He trialed symptomatic management including PRN loperamide and avoidance of NSAIDs, using acetaminophen for pain. At follow-up on 03-03-2026, bleeding and diarrhea persisted and he completed a 14-day course of rectal hydrocortisone (Anusol-HC) for presumed hemorrhoidal irritation; symptoms did not resolve. In early May 2026, he reported worsening fatigue and unintentional weight loss, and FIT testing on 05-05-2026 was positive, raising concern for ongoing gastrointestinal hemorrhage (K92.2). On 05-08-2026, CBC and iron studies were obtained demonstrating iron deficiency anemia (D50.9) in the context of continued bleeding, and oral iron was started. A CT abdomen and pelvis with IV contrast on 05-12-2026 did not show an obstructing mass or acute surgical process but cannot exclude mucosal etiologies. Gastroenterology consultation on 05-19-2026 reviewed the chronicity of bleeding and stool changes, the positive FIT, and objective anemia and recommended diagnostic colonoscopy with biopsy (CPT 45380) to directly assess the colon and obtain tissue samples if abnormal mucosa, polyps, or lesions are encountered. Socially, he is a former smoker and currently drinks alcohol socially (about 1\u20132 drinks on weekends) and denies illicit drug use. He has reduced NSAID use due to bleeding concerns. Family history is notable for a father with colon polyps removed in his 50s and a maternal aunt with colorectal cancer in her 60s, which increases concern given his current presentation. He has a supportive spouse who can assist with transportation and post-sedation observation. The current referral request is for colonoscopy with biopsy to evaluate persistent bleeding (K92.2, K62.5), chronic stool abnormalities (R19.5), and iron deficiency anemia (D50.9) after months of conservative management and objective positive FIT and anemia findings, with attention to comorbid hypertension for sedation planning.",
+    "has_fit_fobt_result": true,
+    "medications": [
+      {
+        "brand": "Norvasc",
+        "generic_name": "Amlodipine 5 mg",
+        "dosage": "Take 1 tablet by mouth daily",
+        "qty": "90 tablets",
+        "prescribed_by": "Monica Geller, MD",
+        "status": "ongoing",
+        "start_date": "08-15-2024",
+        "end_date": "ongoing",
+        "reason": "Hypertension; comorbidity considered in sedation planning for requested CPT 45380."
+      },
+      {
+        "brand": "Prilosec OTC",
+        "generic_name": "Omeprazole 20 mg",
+        "dosage": "Take 1 capsule by mouth daily before breakfast",
+        "qty": "30 capsules",
+        "prescribed_by": "Monica Geller, MD",
+        "status": "ongoing",
+        "start_date": "02-10-2025",
+        "end_date": "ongoing",
+        "reason": "GERD symptoms; supports upper GI protection while evaluating GI bleeding symptoms (K92.2)."
+      },
+      {
+        "brand": "Fer-In-Sol",
+        "generic_name": "Ferrous sulfate 325 mg (65 mg elemental iron)",
+        "dosage": "Take 1 tablet by mouth every other day",
+        "qty": "45 tablets",
+        "prescribed_by": "Monica Geller, MD",
+        "status": "current",
+        "start_date": "05-08-2026",
+        "end_date": "ongoing",
+        "reason": "Iron deficiency anemia, unspecified (D50.9) associated with chronic GI/rectal bleeding (K92.2, K62.5)."
+      },
+      {
+        "brand": "Imodium A-D",
+        "generic_name": "Loperamide 2 mg",
+        "dosage": "Take 1 capsule by mouth after loose stool; max 4 capsules/day PRN",
+        "qty": "30 capsules",
+        "prescribed_by": "Monica Geller, MD",
+        "status": "ongoing",
+        "start_date": "01-06-2026",
+        "end_date": "ongoing",
+        "reason": "Symptomatic management for chronic diarrhea and fecal abnormality (R19.5) during conservative therapy period."
+      },
+      {
+        "brand": "Anusol-HC",
+        "generic_name": "Hydrocortisone 25 mg rectal suppository",
+        "dosage": "Insert 1 suppository rectally twice daily for 14 days",
+        "qty": "28 suppositories",
+        "prescribed_by": "Monica Geller, MD",
+        "status": "past",
+        "start_date": "03-03-2026",
+        "end_date": "03-17-2026",
+        "reason": "Trial for rectal bleeding presumed hemorrhoidal irritation (K62.5); symptoms persisted."
+      },
+      {
+        "brand": "Tylenol",
+        "generic_name": "Acetaminophen 500 mg",
+        "dosage": "Take 1 tablet by mouth every 6 hours as needed for pain (max 3,000 mg/day)",
+        "qty": "60 tablets",
+        "prescribed_by": "Monica Geller, MD",
+        "status": "ongoing",
+        "start_date": "01-06-2026",
+        "end_date": "ongoing",
+        "reason": "Pain control for abdominal cramping while avoiding NSAIDs due to bleeding symptoms (K92.2/K62.5)."
+      }
+    ],
+    "allergies": [
+      {
+        "allergen": "Penicillin",
+        "allergy_type": "Drug",
+        "reaction": "Hives",
+        "severity": "Moderate",
+        "onset_date": "06-01-1998"
+      },
+      {
+        "allergen": "Shellfish",
+        "allergy_type": "Food",
+        "reaction": "Lip and facial swelling, throat tightness",
+        "severity": "Severe",
+        "onset_date": "08-12-2005"
+      },
+      {
+        "allergen": "Ragweed pollen",
+        "allergy_type": "Environmental",
+        "reaction": "Sneezing, itchy eyes",
+        "severity": "Mild",
+        "onset_date": "09-01-2012"
+      }
+    ],
+    "vaccinations": [
+      {
+        "vaccine_name": "Influenza (Quadrivalent)",
+        "vaccine_type": "Inactivated",
+        "date_administered": "10-07-2025",
+        "administered_by": "UT Southwestern Medical Center - Family Medicine",
+        "dose_number": "Annual",
+        "reason": "Routine Immunization"
+      },
+      {
+        "vaccine_name": "COVID-19 mRNA (Pfizer-BioNTech)",
+        "vaccine_type": "mRNA",
+        "date_administered": "10-20-2024",
+        "administered_by": "CVS Pharmacy - Dallas, TX",
+        "dose_number": "Booster",
+        "reason": "Routine Immunization"
+      },
+      {
+        "vaccine_name": "Tdap (Tetanus, diphtheria, pertussis)",
+        "vaccine_type": "Toxoid",
+        "date_administered": "04-18-2022",
+        "administered_by": "UT Southwestern Medical Center - Family Medicine",
+        "dose_number": "1",
+        "reason": "Routine Immunization"
+      },
+      {
+        "vaccine_name": "Hepatitis B (Engerix-B)",
+        "vaccine_type": "Subunit",
+        "date_administered": "11-12-2021",
+        "administered_by": "UT Southwestern Medical Center - Family Medicine",
+        "dose_number": "3",
+        "reason": "Catch-up"
+      },
+      {
+        "vaccine_name": "Pneumococcal PCV20",
+        "vaccine_type": "Other",
+        "date_administered": "03-01-2026",
+        "administered_by": "UT Southwestern Medical Center - Family Medicine",
+        "dose_number": "1",
+        "reason": "Routine Immunization"
+      }
+    ],
+    "therapies": [
+      {
+        "therapy_type": "Other",
+        "cpt_code": "97802",
+        "cpt_description": "Medical nutrition therapy; initial assessment and intervention, individual, face-to-face with the patient, each 15 minutes",
+        "icd10_codes": [
+          "R19.5 - Other fecal abnormalities",
+          "K62.5 - Hemorrhage of anus and rectum"
+        ],
+        "provider": "Erin Smalls, RD, LD",
+        "provider_npi": "1659843207",
+        "facility": "UT Southwestern Medical Center - Nutrition Services",
+        "start_date": "01-20-2026",
+        "end_date": "04-28-2026",
+        "frequency": "Every 2 weeks",
+        "status": "Completed",
+        "reason": "Dietary counseling as part of conservative management for chronic diarrhea/stool changes and rectal bleeding symptoms.",
+        "notes": "Focused on hydration, trigger identification, soluble fiber trial, and symptom log review; symptoms persisted prompting GI referral."
+      }
+    ],
+    "behavioral_notes": "Patient reports taking daily medications consistently and tracks symptoms in a phone note. He is highly goal-oriented and prefers clear, stepwise plans; he has reduced NSAID use due to bleeding concerns and tends to push through fatigue at work. Former smoker; drinks alcohol socially about 1\u20132 drinks on weekends; denies illicit drug use. He reports increased stress related to unpredictable bowel urgency but denies current depressive symptoms; sleep is occasionally disrupted by nocturnal stools.",
+    "encounters": [
+      {
+        "encounter_date": "01-06-2026",
+        "encounter_type": "Office Visit",
+        "purpose_of_visit": "Evaluation of several weeks of loose stools with intermittent blood on wiping.",
+        "provider": "Monica Geller, MD",
+        "provider_npi": "1437285609",
+        "facility": "UT Southwestern Medical Center - Family Medicine",
+        "vital_signs": {
+          "recorded_date": "01-06-2026",
+          "blood_pressure": "136/84 mmHg",
+          "heart_rate": "78 bpm",
+          "blood_sugar_fasting": null,
+          "blood_sugar_postprandial": null,
+          "bmi": "26.7 kg/m\u00b2",
+          "oxygen_saturation": "98%",
+          "temperature": "98.2\u00b0F",
+          "respiratory_rate": "16 breaths/min"
+        },
+        "chief_complaint": "I've had loose stools for weeks and sometimes see blood when I wipe.",
+        "doctor_note": "HPI: Patient reports 4\u20135 loose stools/day for several weeks with urgency and intermittent small amounts of bright red blood on wiping. Mild lower abdominal cramping. Denies fever, recent travel, or sick contacts. He is concerned about the bleeding and wants a plan.\n\nReview of Systems: Positive for diarrhea, urgency, intermittent rectal bleeding, and cramping. Negative for chest pain, shortness of breath, dizziness, or syncope.\n\nPhysical Exam: Well-appearing male, no acute distress. Abdomen soft, mild diffuse lower quadrant tenderness without rebound/guarding. No peritoneal signs. Cardiopulmonary exam normal.\n\nAssessment: Chronic diarrhea/stool changes (R19.5) with intermittent rectal bleeding (K62.5) and concern for GI bleeding (K92.2) given repeated episodes. Hypertension controlled on amlodipine.\n\nPlan: Begin conservative management: symptom log, hydration, diet adjustment and referral to nutrition counseling. Start loperamide PRN for diarrhea. Avoid NSAIDs; use acetaminophen PRN for pain. Continue amlodipine and omeprazole. Order FIT and baseline labs if symptoms persist/worsen; discuss return precautions and follow-up in 6\u20138 weeks.",
+        "observations": [
+          "Reports 4\u20135 loose stools/day with urgency",
+          "Intermittent bright red blood on wiping",
+          "No fever or recent travel",
+          "Avoiding NSAIDs due to bleeding concern"
+        ],
+        "procedures_performed": [
+          "CPT 99213 - Office or other outpatient visit for the evaluation and management of an established patient, level 3"
+        ],
+        "diagnoses": [
+          "R19.5 - Other fecal abnormalities",
+          "K62.5 - Hemorrhage of anus and rectum",
+          "K92.2 - Gastrointestinal hemorrhage, unspecified"
+        ],
+        "medications_prescribed": [
+          "Imodium A-D (loperamide 2 mg) PRN diarrhea",
+          "Tylenol (acetaminophen 500 mg) PRN pain"
+        ],
+        "care_team": [
+          "Monica Geller, MD",
+          "Erin Smalls, RD, LD (referral placed)"
+        ],
+        "progress_notes": "Initial presentation; conservative therapy initiated with symptom tracking and diet-focused interventions.",
+        "follow_up_instructions": "Follow up in 6\u20138 weeks or sooner for increased bleeding, dizziness, fever, worsening abdominal pain, or signs of dehydration."
+      },
+      {
+        "encounter_date": "03-03-2026",
+        "encounter_type": "Follow-up",
+        "purpose_of_visit": "Reassessment of persistent diarrhea and intermittent rectal bleeding despite initial conservative measures.",
+        "provider": "Monica Geller, MD",
+        "provider_npi": "1437285609",
+        "facility": "UT Southwestern Medical Center - Family Medicine",
+        "vital_signs": {
+          "recorded_date": "03-03-2026",
+          "blood_pressure": "134/82 mmHg",
+          "heart_rate": "76 bpm",
+          "blood_sugar_fasting": null,
+          "blood_sugar_postprandial": null,
+          "bmi": "26.5 kg/m\u00b2",
+          "oxygen_saturation": "98%",
+          "temperature": "98.3\u00b0F",
+          "respiratory_rate": "16 breaths/min"
+        },
+        "chief_complaint": "The diarrhea hasn't really stopped, and I'm still seeing blood off and on.",
+        "doctor_note": "HPI: Patient returns with ongoing loose stools (4\u20136/day) and intermittent blood on wiping. Has been working with nutrition counseling and using loperamide intermittently with partial temporary improvement. No fevers. Notes rectal irritation and discomfort.\n\nReview of Systems: Positive for diarrhea, urgency, intermittent rectal bleeding. Negative for melena described as tarry stools, syncope, or chest pain.\n\nPhysical Exam: Vitals stable. Abdomen soft, mild tenderness LLQ. No guarding. External perianal irritation noted; no thrombosed hemorrhoid seen.\n\nAssessment: Persistent stool abnormality (R19.5) and rectal bleeding (K62.5) with ongoing concern for GI bleeding (K92.2). Needs objective testing to further evaluate bleeding.\n\nPlan: Start a 14-day trial of rectal hydrocortisone suppositories for symptom relief while continuing conservative measures. Continue loperamide PRN and nutrition therapy. Order FIT to assess occult blood and plan labs if fatigue develops. Discussed GI referral if FIT positive or symptoms persist.",
+        "observations": [
+          "Persistent diarrhea despite diet modification",
+          "Intermittent rectal bleeding continues",
+          "Perianal irritation present",
+          "No systemic infectious symptoms"
+        ],
+        "procedures_performed": [
+          "CPT 99214 - Office or other outpatient visit for the evaluation and management of an established patient, level 4"
+        ],
+        "diagnoses": [
+          "R19.5 - Other fecal abnormalities",
+          "K62.5 - Hemorrhage of anus and rectum",
+          "K92.2 - Gastrointestinal hemorrhage, unspecified"
+        ],
+        "medications_prescribed": [
+          "Anusol-HC (hydrocortisone 25 mg rectal suppository) BID x14 days"
+        ],
+        "care_team": [
+          "Monica Geller, MD",
+          "Erin Smalls, RD, LD"
+        ],
+        "progress_notes": "Symptoms ongoing; added targeted rectal therapy and escalated diagnostic plan with FIT and possible GI referral.",
+        "follow_up_instructions": "Complete 14-day suppository course; continue symptom log. Contact clinic for increased bleeding, lightheadedness, or worsening abdominal pain. Follow up after FIT result."
+      },
+      {
+        "encounter_date": "05-08-2026",
+        "encounter_type": "Office Visit",
+        "purpose_of_visit": "Evaluation of fatigue, weight loss, and persistent bleeding/diarrhea; review and order laboratory workup.",
+        "provider": "Monica Geller, MD",
+        "provider_npi": "1437285609",
+        "facility": "UT Southwestern Medical Center - Family Medicine",
+        "vital_signs": {
+          "recorded_date": "05-08-2026",
+          "blood_pressure": "140/88 mmHg",
+          "heart_rate": "84 bpm",
+          "blood_sugar_fasting": null,
+          "blood_sugar_postprandial": null,
+          "bmi": "26.2 kg/m\u00b2",
+          "oxygen_saturation": "98%",
+          "temperature": "98.6\u00b0F",
+          "respiratory_rate": "18 breaths/min"
+        },
+        "chief_complaint": "I'm tired all the time, I've lost weight, and the bleeding and diarrhea keep happening.",
+        "doctor_note": "HPI: Patient reports continued loose stools and intermittent rectal bleeding. Over the last 6\u20138 weeks, he has noticed worsening fatigue and unintentional weight loss. Completed rectal hydrocortisone trial in March without sustained improvement. FIT recently returned positive. He denies syncope but reports occasional lightheadedness when standing quickly.\n\nReview of Systems: Positive for fatigue, weight loss, diarrhea, rectal bleeding, and abdominal cramping. Negative for chest pain, dyspnea at rest, or fever.\n\nPhysical Exam: Appears tired but in no acute distress. Abdomen soft with mild diffuse tenderness; no rebound/guarding. Skin without pallor noted on quick exam, but conjunctiva mildly pale.\n\nAssessment: Persistent GI bleeding symptoms (K92.2/K62.5) with chronic stool abnormality (R19.5) and concern for anemia; positive FIT. Hypertension stable.\n\nPlan: Order CBC with differential and iron studies to evaluate for iron deficiency anemia. Start oral ferrous sulfate every other day pending results due to clinical concern for iron deficiency. Order CT abdomen/pelvis with IV contrast to evaluate for structural causes while arranging GI referral for colonoscopy with biopsy (CPT 45380). Continue omeprazole and avoid NSAIDs; continue loperamide PRN and acetaminophen PRN.",
+        "observations": [
+          "Positive FIT reviewed",
+          "Fatigue affecting work and sleep",
+          "Unintentional weight loss reported",
+          "Mild conjunctival pallor"
+        ],
+        "procedures_performed": [
+          "CPT 99214 - Office or other outpatient visit for the evaluation and management of an established patient, level 4"
+        ],
+        "diagnoses": [
+          "K92.2 - Gastrointestinal hemorrhage, unspecified",
+          "K62.5 - Hemorrhage of anus and rectum",
+          "R19.5 - Other fecal abnormalities",
+          "D50.9 - Iron deficiency anemia, unspecified"
+        ],
+        "medications_prescribed": [
+          "Fer-In-Sol (ferrous sulfate 325 mg) every other day"
+        ],
+        "care_team": [
+          "Monica Geller, MD",
+          "Radiology scheduling",
+          "Gastroenterology referral coordinator"
+        ],
+        "progress_notes": "Escalation of workup due to fatigue, weight loss, and positive FIT; labs and CT ordered; iron started.",
+        "follow_up_instructions": "Complete labs today; schedule CT within 1 week. Continue iron every other day; take with food if GI upset. Seek care for heavy bleeding, dizziness, chest pain, or shortness of breath."
+      },
+      {
+        "encounter_date": "05-19-2026",
+        "encounter_type": "Specialist Consult",
+        "purpose_of_visit": "Gastroenterology evaluation for persistent bleeding, diarrhea, positive FIT, and iron deficiency anemia; plan for colonoscopy with biopsy.",
+        "provider": "Dr. Harris, MD (Gastroenterology)",
+        "provider_npi": "1932457810",
+        "facility": "UT Southwestern Medical Center - Endoscopy Clinic",
+        "vital_signs": {
+          "recorded_date": "05-19-2026",
+          "blood_pressure": "138/86 mmHg",
+          "heart_rate": "82 bpm",
+          "blood_sugar_fasting": null,
+          "blood_sugar_postprandial": null,
+          "bmi": "26.8 kg/m\u00b2",
+          "oxygen_saturation": "98%",
+          "temperature": "98.4\u00b0F",
+          "respiratory_rate": "16 breaths/min"
+        },
+        "chief_complaint": "Ongoing blood in stool and diarrhea; I\u2019m worried because the stool test was positive.",
+        "doctor_note": "HPI: Patient presents for GI consult with months-long diarrhea/urgency and intermittent rectal bleeding. FIT positive on 05-05-2026. Labs demonstrate iron deficiency anemia pattern; patient endorses fatigue and weight loss. Trial of conservative management (diet counseling, PRN loperamide, and prior rectal hydrocortisone) did not resolve bleeding.\n\nReview of Systems: Positive for diarrhea, urgency, intermittent bleeding, fatigue, and weight loss. Negative for persistent vomiting or severe constant abdominal pain.\n\nPhysical Exam: Stable vitals. Abdomen soft, mild lower quadrant tenderness, no guarding. No signs of acute distress.\n\nAssessment: GI bleeding (K92.2) with rectal bleeding (K62.5), stool changes (R19.5), and iron deficiency anemia (D50.9). Needs endoscopic evaluation with tissue sampling to identify cause.\n\nPlan: Schedule colonoscopy with biopsy (CPT 45380). Reviewed bowel prep and sedation expectations; documented hypertension on amlodipine for sedation planning. Continue iron therapy. CT results reviewed as non-obstructive; proceed with colonoscopy given ongoing symptoms and objective findings.",
+        "observations": [
+          "FIT positive documented",
+          "Persistent symptoms despite conservative therapy",
+          "Fatigue and weight loss reported",
+          "CT non-obstructive"
+        ],
+        "procedures_performed": [
+          "CPT 99204 - Office or other outpatient visit for the evaluation and management of a new patient, level 4"
+        ],
+        "diagnoses": [
+          "K92.2 - Gastrointestinal hemorrhage, unspecified",
+          "K62.5 - Hemorrhage of anus and rectum",
+          "R19.5 - Other fecal abnormalities",
+          "D50.9 - Iron deficiency anemia, unspecified"
+        ],
+        "medications_prescribed": [
+          "Bowel prep to be prescribed at pre-op visit; continue current meds"
+        ],
+        "care_team": [
+          "Dr. Harris, MD (Gastroenterology)",
+          "Monica Geller, MD",
+          "Endoscopy scheduling team"
+        ],
+        "progress_notes": "Consult establishes objective indications (positive FIT, anemia) and chronicity; colonoscopy with biopsy planned as next diagnostic step.",
+        "follow_up_instructions": "Schedule colonoscopy within 4\u20138 weeks; continue iron and hydration. Call for increased bleeding, dizziness, or severe abdominal pain."
+      },
+      {
+        "encounter_date": "05-27-2026",
+        "encounter_type": "Pre-op Evaluation",
+        "purpose_of_visit": "Pre-procedure evaluation prior to scheduled colonoscopy with biopsy; medication reconciliation, sedation risk screen, and bowel prep planning.",
+        "provider": "Dr. Harris, MD (Gastroenterology)",
+        "provider_npi": "1932457810",
+        "facility": "UT Southwestern Medical Center - Endoscopy Clinic",
+        "vital_signs": {
+          "recorded_date": "05-27-2026",
+          "blood_pressure": "132/80 mmHg",
+          "heart_rate": "74 bpm",
+          "blood_sugar_fasting": null,
+          "blood_sugar_postprandial": null,
+          "bmi": "26.6 kg/m\u00b2",
+          "oxygen_saturation": "99%",
+          "temperature": "98.1\u00b0F",
+          "respiratory_rate": "16 breaths/min"
+        },
+        "chief_complaint": "I'm here to get cleared and go over the prep before my colonoscopy.",
+        "doctor_note": "HPI: Patient presents for pre-procedure planning prior to colonoscopy with biopsy (CPT 45380) scheduled for 07-01-2026 at UT Southwestern Medical Center - Endoscopy Lab. Symptoms of GI/rectal bleeding (K92.2/K62.5) and chronic diarrhea/stool changes (R19.5) continue intermittently; fatigue persists though he reports modest improvement since starting iron therapy for D50.9. No new chest pain, syncope, or worsening dyspnea.\n\nReview of Systems: Positive for intermittent bleeding and loose stools; positive for fatigue. Negative for fever, vomiting, or severe progressive abdominal pain.\n\nPhysical Exam: Well-appearing, hemodynamically stable. Abdomen soft, mild tenderness without guarding. Cardiopulmonary exam normal.\n\nAssessment: Pre-procedure evaluation for requested CPT 45380. Ongoing objective indications include positive FIT, documented iron deficiency anemia, and persistent bleeding/diarrhea. Hypertension treated with amlodipine is stable; considered in sedation planning.\n\nPlan: Proceed with scheduled colonoscopy with biopsy. Medication reconciliation completed; continue amlodipine and omeprazole as usual. Continue iron; advised that iron can darken stools and may be held around bowel prep for visualization per endoscopy instructions. Bowel prep prescription sent and detailed written instructions provided. Confirmed transportation and post-sedation supervision. Reviewed allergy list for antibiotic/sedation planning. Concurrent Care Reference: Completed nutrition counseling (97802) earlier this year as conservative management for R19.5/K62.5.",
+        "observations": [
+          "Vitals stable; BP controlled on amlodipine",
+          "Still intermittent bleeding and diarrhea",
+          "Fatigue persists with anemia under treatment",
+          "Reviewed transportation needs for sedation"
+        ],
+        "procedures_performed": [
+          "CPT 99214 - Office or other outpatient visit for the evaluation and management of an established patient, level 4"
+        ],
+        "diagnoses": [
+          "K92.2 - Gastrointestinal hemorrhage, unspecified",
+          "K62.5 - Hemorrhage of anus and rectum",
+          "R19.5 - Other fecal abnormalities",
+          "D50.9 - Iron deficiency anemia, unspecified"
+        ],
+        "medications_prescribed": [
+          "Bowel preparation prescription (per facility protocol) for upcoming CPT 45380"
+        ],
+        "care_team": [
+          "Dr. Harris, MD (Gastroenterology)",
+          "Endoscopy nursing team",
+          "Monica Geller, MD"
+        ],
+        "progress_notes": "Pre-op evaluation consolidates objective indications (FIT+, anemia) and confirms stable comorbidity profile for sedation planning; procedure scheduled.",
+        "follow_up_instructions": "Colonoscopy with biopsy scheduled 07-01-2026 at UT Southwestern Medical Center - Endoscopy Lab. Clear liquids the day before; follow split-dose bowel prep instructions. Hold oral iron starting 06-29-2026 through procedure day to improve visualization; resume 07-02-2026 unless instructed otherwise. Continue amlodipine and omeprazole on 07-01-2026 with small sip of water. No driving for 24 hours after sedation; arrange adult escort."
+      }
+    ],
+    "images": [
+      {
+        "type": "CT Abdomen and Pelvis with IV Contrast",
+        "date": "05-12-2026",
+        "provider": "Monica Geller, MD",
+        "facility": "UT Southwestern Medical Center, Radiology",
+        "findings": "No bowel obstruction or discrete obstructing colonic mass. CT limited for mucosal evaluation; persistent bleeding/diarrhea with positive FIT and iron deficiency anemia supports colonoscopy with biopsy for definitive assessment."
+      }
+    ],
+    "reports": [
+      {
+        "type": "FIT (Fecal Immunochemical Test)",
+        "date": "05-05-2026",
+        "provider": "Monica Geller, MD",
+        "results": "Result: Positive. Comment: Detectable human hemoglobin consistent with occult lower GI bleeding; correlate with symptoms of K92.2/K62.5 and proceed with endoscopic evaluation as planned.",
+        "notes": "Ordered due to persistent stool changes (R19.5) and intermittent rectal bleeding (K62.5). Positive result used to support GI referral and planned CPT 45380."
+      },
+      {
+        "type": "CBC with Differential",
+        "date": "05-08-2026",
+        "provider": "Monica Geller, MD",
+        "results": "WBC 7.4 x10^3/\u00b5L; Hgb 10.8 g/dL (low); Hct 33.1% (low); MCV 74 fL (low); RDW 16.9% (high); Platelets 412 x10^3/\u00b5L (mildly high). Differential: neutrophils 62%, lymphocytes 28%, monocytes 7%, eosinophils 2%, basophils 1%. Pattern consistent with microcytic anemia supporting D50.9 in context of ongoing bleeding (K92.2/K62.5).",
+        "notes": "Used to document objective anemia prior to requested colonoscopy with biopsy (CPT 45380) and to guide iron supplementation."
+      },
+      {
+        "type": "Iron Studies",
+        "date": "05-08-2026",
+        "provider": "Monica Geller, MD",
+        "results": "Ferritin 9 ng/mL (low); Serum iron 22 \u00b5g/dL (low); TIBC 460 \u00b5g/dL (high); Transferrin saturation 5% (low). Findings support iron deficiency anemia (D50.9) likely related to chronic GI blood loss (K92.2/K62.5).",
+        "notes": "Objective evidence supporting endoscopic evaluation to identify bleeding source; iron therapy initiated."
+      },
+      {
+        "type": "Surgical Pathology (Colon Biopsy)",
+        "date": "05-27-2026",
+        "provider": "Dr. Harris, MD (Gastroenterology)",
+        "results": "Pending (specimens to be obtained during requested CPT 45380).",
+        "notes": "This report placeholder is included as an expected post-procedure attachment; final histopathology will be generated after colonoscopy with biopsy is completed."
+      }
+    ],
+    "procedures": [
+      {
+        "name": "No prior endoscopic procedures documented",
+        "date": "07-01-2021",
+        "provider": "Monica Geller, MD",
+        "facility": "UT Southwestern Medical Center - Family Medicine",
+        "reason": "Chart review baseline; patient reports no prior colonoscopy or EGD.",
+        "notes": "No prior endoscopic diagnostic evaluation documented prior to current request for CPT 45380."
+      }
+    ],
+    "social_history": {
+      "tobacco_use": "Former smoker - quit 2014",
+      "tobacco_frequency": "Previously ~0.5 pack/day for 8 years",
+      "alcohol_use": "Social/Occasional",
+      "alcohol_frequency": "1\u20132 drinks on weekends",
+      "illicit_drug_use": "None",
+      "substance_history": null,
+      "last_medical_visit": "05-27-2026",
+      "last_visit_reason": "Pre-procedure evaluation for scheduled colonoscopy with biopsy (CPT 45380)",
+      "missed_appointment": false,
+      "missed_appointment_reason": null,
+      "early_visit_reason": null,
+      "mental_health_history": null,
+      "mental_health_current": "PHQ-2 negative on 05-27-2026; reports stress related to bowel urgency but no depressive symptoms",
+      "exercise_habits": "Walks 20\u201330 minutes, 3x/week when symptoms allow",
+      "diet_notes": "Working on trigger identification; avoids greasy foods and limits dairy; uses hydration strategies per RD plan",
+      "family_history_relevant": "Father with colon polyps removed in his 50s; maternal aunt with colorectal cancer in her 60s. No known inflammatory bowel disease in first-degree relatives."
+    },
+    "vital_signs_current": {
+      "recorded_date": "05-27-2026",
+      "blood_pressure": "132/80 mmHg",
+      "heart_rate": "74 bpm",
+      "blood_sugar_fasting": null,
+      "blood_sugar_postprandial": null,
+      "bmi": "26.6 kg/m\u00b2",
+      "oxygen_saturation": "99%",
+      "temperature": "98.1\u00b0F",
+      "respiratory_rate": "16 breaths/min"
+    },
+    "gender_specific_history": "No prior PSA screening documented in chart. Denies lower urinary tract symptoms. No known urologic history."
   }
 }

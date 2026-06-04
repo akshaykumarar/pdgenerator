@@ -158,11 +158,17 @@ def _build_clinical_logic_instruction(case_details: dict) -> str:
     outcome = str(case_details.get("outcome", "") or "")
     if _re.search(r"(reject|rejection|deny|denial|low\s+probability)", outcome, _re.IGNORECASE):
         return get_rejection_gap_instruction(case_details)
+    
+    # Distributed evidence for approval/moderate cases
     return (
-        "If Target is Approval or High Probability → ENSURE strong supporting evidence exists. "
-        "Generate comprehensive clinical documentation with clear medical necessity, detailed "
-        "diagnostic workup, and explicit treatment rationale. Every finding must positively "
-        "corroborate the requested procedure."
+        "If Target is Approval or High Probability → distribute clinical evidence strategically:\n"
+        "  - The PATIENT PERSONA must establish the clinical condition, history, and need for the procedure, "
+        "but should NOT contain exhaustive diagnostic evidence or definitive test results.\n"
+        "  - Supporting DOCUMENTS must carry the definitive evidence: lab results, imaging findings, "
+        "specialist assessments, and objective measurements that conclusively justify medical necessity.\n"
+        "  - The persona alone should present a moderate-probability case. Only with supporting documents "
+        "attached should the case reach high-probability approval.\n"
+        "  - This distribution ensures realistic PA workflows where supporting documentation is essential."
     )
 
 def get_clinical_data_prompt(case_details: dict, patient_state: dict, document_plan: dict, user_feedback: str = "",
@@ -279,12 +285,14 @@ def get_clinical_data_prompt(case_details: dict, patient_state: dict, document_p
             * **procedure_details, study_information**: Fill all sub-fields with realistic values; do not leave empty strings for required keys.
           - **MEDICATION / THERAPY GENERATION GUIDELINES (MANDATORY)**:
             If the requested service is a medication (e.g. infusion, injection, formulary drug):
+            * **Terminology**: Note that 'procedure' in this context refers to the drug administration, infusion, or injection itself.
             * **Indication & Diagnosis**: Clearly specify the FDA-approved or clinically accepted indication and active diagnosis (with matching ICD-10 code).
             * **Failed Prior Therapies**: Detail the exact names, dosages, durations, and outcomes of failed prior therapies (e.g., "Patient tried [Formulary Drug A] for 8 weeks with no response").
             * **Contraindications / Intolerances**: Explicitly document any contraindications or intolerances to first-line/formulary drugs (e.g., "Patient experienced severe gastrointestinal distress on [Alternative Drug]").
             * **Dosing & Duration**: Clearly state the requested dosage, frequency of administration, and anticipated duration of treatment.
             * **Monitoring Labs**: Include baseline and regular monitoring laboratory/diagnostic tests (e.g., liver function tests, renal panels, CBC) with dates and results.
-            * **Step Therapy/Formulary Rationale**: Provide explicit step-therapy or formulary exception justifications explaining why non-preferred agents are required.
+            * **Step Therapy/Formulary Rationale**: Provide explicit step-therapy or formulary exception justifications explaining why non-preferred agents are required, referencing specific formulary tiers and exception criteria.
+            * **Encounter Patterns**: Encounters should include medication-specific patterns such as outpatient infusion center visits, pharmacy counseling notes, or specialist medication reviews.
           - **Example — MINIMAL (bad)**: findings: "No acute findings."
           - **Example — INTENSIVE (good)**: findings: "Cardiac CT angiography was performed with contrast. The left main, LAD, circumflex, and right coronary arteries are patent. There is non-obstructive plaque in the mid-LAD (approximately 20% stenosis). Left ventricular size and function are normal. No pericardial effusion. Incidental note: small hepatic cyst in segment VII, stable from prior."
           - For each section in the DOCUMENT PLAN (findings, impression, clinical_history, procedure_description, etc.), provide at least 2-4 sentences with specific clinical detail; avoid one-line answers.
@@ -831,8 +839,14 @@ You are to act as a clinical analyst. Your task is to synthesize the provided in
 
 - **test_case_and_overview**: A brief paragraph summarizing the test case details and the case overview.
 - **details_from_extraction**: A bulleted list of details from extraction like CPT, ICD codes, and insurance.
-- **likelihood_without_documents**: The Likelihood/PA probability without considering any supporting documents.
-- **likelihood_change_with_documents**: A bulleted list detailing the Likelihood PA score change considering each document; ex. what happens if an individual report is uploaded (if the report creates a positive impact, or if the gap is still not clear from it).
+- **likelihood_without_documents**: The Likelihood/PA probability without considering any supporting documents. Follow these strict calibration rules:
+  * For DENIAL/REJECTION cases: Must be "Very Low" (10-25%). The persona should show clinical need but with embedded gaps that make standalone approval unlikely.
+  * For APPROVAL cases: Must be "Low to Moderate" (25-45%). The persona establishes need but lacks sufficient objective evidence for standalone approval.
+  * For MODERATE/other cases: Must be "Low" (20-35%). Similar to approval but with less clarity.
+- **likelihood_change_with_documents**: A bulleted list detailing the Likelihood PA score change considering each document; ex. what happens if an individual report is uploaded (if the report creates a positive impact, or if the gap is still not clear from it). Each document should incrementally change the score. Follow these final target ranges after all documents:
+  * DENIAL cases: Should reach 40-60% max (gaps prevent full approval)
+  * APPROVAL cases: Should reach 80-95% (documents complete the evidence chain)
+  * MODERATE cases: Should reach 55-75% (some residual gaps)
 - **attachments_list**: A bulleted list of attachments. Each item must be a single concise line formatted like: "Document Name — why it matters".
 - **likelihood_expectations_post_attachments**: After considering all attachments, provide an object with `correct_items` and `gaps_and_issues` (each list must contain max 5 short key points).
 - **medical_necessity**: Analysis of medical necessity indicating `correct_items` and `gaps_and_issues`.
@@ -1144,12 +1158,38 @@ GAP_ARCHETYPE_POOL: list[dict] = [
             "objective functional scores — their absence is not obvious without policy knowledge."
         ),
     },
+    # ─── Dimension F: Macro-Gaps (Omitted Documents) ───────────────────────────
+    {
+        "id": "MG-001",
+        "dimension": "Macro-Gap",
+        "criticality": "high",
+        "name": "Missing Specialist Evaluation Document",
+        "injection_instruction": (
+            "Do NOT generate any specialist consultation note (e.g. Cardiology Consult, Gastroenterology Consult) "
+            "for the procedure's relevant specialty, even though the PA request and clinical narrative reference "
+            "an evaluation. The document list must NOT contain this specialist consult. This constitutes a macro-level "
+            "missing document gap required by standard payer policy."
+        ),
+    },
+    {
+        "id": "MG-002",
+        "dimension": "Macro-Gap",
+        "criticality": "high",
+        "name": "Missing Required Diagnostic Report",
+        "injection_instruction": (
+            "Do NOT generate the primary diagnostic report (e.g. no CT scan/MRI report for surgery, or no laboratory "
+            "panel for drug toxicity monitoring) that is the absolute prerequisite for the procedure. While "
+            "encounters should reference this report and its findings, the actual report document must be omitted "
+            "from the generated documents list."
+        ),
+    },
 ]
 
 def _select_gap_archetypes(n: int = 3) -> list[dict]:
     """
     Select n gap archetypes from GAP_ARCHETYPE_POOL ensuring:
-      - At least 1 high-criticality archetype (Treatment-Escalation or Policy-Criteria)
+      - At least 1 Macro-Gap archetype (MG)
+      - At least 1 other high-criticality archetype (Treatment-Escalation or Policy-Criteria)
       - At least 2 different dimensions are represented
       - No two archetypes share the same 'id'
       - Total n is randomized between 2 and 4 unless explicitly overridden
@@ -1159,21 +1199,24 @@ def _select_gap_archetypes(n: int = 3) -> list[dict]:
     pool = GAP_ARCHETYPE_POOL
     n = _random.randint(2, 4)
 
-    # Must-have: one high-impact archetype from TE or PC dimensions
+    # Must-have 1: Macro-Gap
+    macro_gaps = [a for a in pool if a["dimension"] == "Macro-Gap"]
+    must_have_mg = _random.choice(macro_gaps)
+
+    # Must-have 2: one high-impact archetype from TE or PC dimensions
     high_impact = [a for a in pool if a["dimension"] in ("Treatment-Escalation", "Policy-Criteria")]
-    must_have = _random.choice(high_impact)
+    must_have_hi = _random.choice(high_impact)
 
-    remaining_pool = [a for a in pool if a["id"] != must_have["id"]]
-    fill_count = n - 1
-
-    # Try to get at least one from a different dimension than must_have
-    diff_dim = [a for a in remaining_pool if a["dimension"] != must_have["dimension"]]
-    if len(diff_dim) >= fill_count:
-        fill = _random.sample(diff_dim, fill_count)
-    else:
+    selected = [must_have_mg, must_have_hi]
+    
+    # If we need more, fill from remaining pool
+    remaining_pool = [a for a in pool if a["id"] not in (must_have_mg["id"], must_have_hi["id"])]
+    fill_count = n - len(selected)
+    
+    if fill_count > 0:
         fill = _random.sample(remaining_pool, fill_count)
+        selected.extend(fill)
 
-    selected = [must_have] + fill
     _random.shuffle(selected)
     return selected
 
