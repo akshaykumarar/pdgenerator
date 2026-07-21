@@ -139,7 +139,8 @@ def _run_generation(job_id: str, patient_id: str, feedback: str,
                      vaccinations: list, therapies: list,
                      behavioral_notes: str,
                      encounters: list, images: list,
-                     reports: list, procedures: list):
+                     reports: list, procedures: list,
+                     scan_mode: bool | dict = False):
     """Background worker: calls the generator and updates job state."""
     with _jobs_lock:
         _jobs[job_id]["status"] = "running"
@@ -267,7 +268,8 @@ def _run_generation(job_id: str, patient_id: str, feedback: str,
                 excluded_names=current_names,
                 generation_mode=generation_mode,
                 cancel_check=cancel_check,
-                archive_token=job_id
+                archive_token=job_id,
+                scan_mode=scan_mode,
             )
 
             if cancel_check():
@@ -318,7 +320,7 @@ def _run_generation(job_id: str, patient_id: str, feedback: str,
 
 
 
-def _run_batch_generation(job_id, patients_payload, pa_optimize):
+def _run_batch_generation(job_id, patients_payload, pa_optimize, scan_mode=False):
     """Background worker for batch processing specific patients."""
     try:
         def log_cb(msg):
@@ -353,7 +355,8 @@ def _run_batch_generation(job_id, patients_payload, pa_optimize):
                     result_name = process_patient_workflow(
                         patient_id=p_id, feedback=feedback,
                         excluded_names=current_names, generation_mode=generation_mode,
-                        cancel_check=cancel_check, archive_token=tok
+                        cancel_check=cancel_check, archive_token=tok,
+                        scan_mode=scan_mode,
                     )
                             
                 if cancel_check():
@@ -487,7 +490,8 @@ def _run_preview_generation(job_id: str, patient_id: str, feedback: str,
 
 
 def _run_generation_from_content(job_id: str, patient_id: str, generation_mode: dict,
-                                  documents_content: list, persona_json: dict | None):
+                                  documents_content: list, persona_json: dict | None,
+                                  scan_mode: bool | dict = False):
     """Background worker: render PDFs from user-confirmed/edited content."""
     with _jobs_lock:
         _jobs[job_id]["status"] = "running"
@@ -505,7 +509,8 @@ def _run_generation_from_content(job_id: str, patient_id: str, generation_mode: 
                 persona_json=persona_json,
                 summarize=True,
                 cancel_check=cancel_check,
-                archive_token=job_id
+                archive_token=job_id,
+                scan_mode=scan_mode,
             )
             
             if cancel_check():
@@ -743,6 +748,7 @@ def api_generate():
     feedback       = body.get("feedback", "")
     generation_mode = body.get("generation_mode", {"summary": True, "reports": True, "persona": True})
     pa_optimize    = bool(body.get("pa_optimize", False))
+    scan_mode      = body.get("scan_mode", False)
     medications    = body.get("medications", [])
     allergies      = body.get("allergies", [])
     vaccinations   = body.get("vaccinations", [])
@@ -775,6 +781,7 @@ def api_generate():
                 "feedback": feedback,
                 "generation_mode": generation_mode,
                 "pa_optimize": pa_optimize,
+                "scan_mode": scan_mode,
                 "medication_count": len(medications),
                 "allergy_count": len(allergies),
                 "vaccination_count": len(vaccinations),
@@ -791,7 +798,7 @@ def api_generate():
         target=_run_generation,
         args=(job_id, patient_id, feedback, generation_mode, pa_optimize,
               medications, allergies, vaccinations, therapies, behavioral_notes,
-              encounters, images, reports, procedures),
+              encounters, images, reports, procedures, scan_mode),
         daemon=True
     )
     t.start()
@@ -860,6 +867,7 @@ def api_generate_from_content():
     generation_mode   = body.get("generation_mode", {"persona": True, "reports": True, "summary": True})
     documents_content = body.get("documents", [])   # [{title_hint, content_html}]
     persona_json      = body.get("persona", None)
+    scan_mode         = body.get("scan_mode", False)
 
     job_id = str(uuid.uuid4())
     with _jobs_lock:
@@ -870,12 +878,12 @@ def api_generate_from_content():
             "result": None,
             "patient_id": patient_id,
             "created_at": datetime.now().isoformat(),
-            "request_context": {"source": "generate_from_content"},
+            "request_context": {"source": "generate_from_content", "scan_mode": scan_mode},
         }
 
     t = threading.Thread(
         target=_run_generation_from_content,
-        args=(job_id, patient_id, generation_mode, documents_content, persona_json),
+        args=(job_id, patient_id, generation_mode, documents_content, persona_json, scan_mode),
         daemon=True,
     )
     t.start()
@@ -896,6 +904,7 @@ def api_generate_all():
     body = request.get_json(force=True) or {}
     patients_payload = body.get("patients", None)
     pa_optimize = bool(body.get("pa_optimize", False))
+    scan_mode = body.get("scan_mode", False)
 
     normalized = []
     if patients_payload:
@@ -948,13 +957,14 @@ def api_generate_all():
                 "feedback": body.get("feedback", ""),
                 "generation_mode": body.get("generation_mode", None),
                 "pa_optimize": pa_optimize,
+                "scan_mode": scan_mode,
                 "is_batch": True
             }
         }
 
     t = threading.Thread(
         target=_run_batch_generation,
-        args=(job_id, normalized, pa_optimize),
+        args=(job_id, normalized, pa_optimize, scan_mode),
         daemon=True
     )
     t.start()

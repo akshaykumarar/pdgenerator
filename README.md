@@ -110,6 +110,7 @@ Two interface files in `ui/` share the same **3-silo layout**:
 
 - **Feedback textarea** — optional AI instructions
 - **Doc type checkboxes** — Persona / Reports / Summary
+- **Scanned/Non-AI Look toggle** — new toggle to post-process PDFs with scan artifacts (skews, noise, shadows, paper tints) at Light, Medium, or Heavy intensity.
 - **Generate button** → `POST /api/generate` → live log polling
 - **Live log panel** — streams real-time generation output (thread-safe for parallel runs)
 - **Document list** — PDF links with versioning (e.g. `v3.0`, `v3.1`)
@@ -173,6 +174,11 @@ After each run, a 2×2 summary panel is shown:
 - **Medications as First-Class Targets**: Intercepts CPT/HCPC codes starting with `J/Q` (e.g. `J0897`, `Q5124`) using regex, routing them to medication-specific prompts (step-therapies, contraindications, dosing, duration, and lab markers) with 100% backward compatibility for legacy consuming apps. Features dynamic HCPC vs CPT label switching in exported grids, fallback justifications, and clinical reports.
 - **Patient Tracker Export**: A landscape-aligned PDF grid and companion TSV compilation of patient Prior Authorization metrics saved to `generated_output/patient-data/`. Features enriched dual-formatting: PDF cell metrics use custom HTML formatting (bold headers, bulleted lists, and red text highlighting gaps) for a premium presentation, while TSV files are completely sanitized of HTML tags and use clean standard multi-line values (using newlines `\n` and plain text bullets `- `) for robust copy-pasting or direct importing into Microsoft Excel. The export supports exactly 12 columns: Patient ID, Patient Name, Department, CPT/HCPC Code (representing standard CPT or medication HCPC drug codes like J/Q), Procedure/Medicine Name, Provider, Insurance Type, Policy Name, extraction expectation (corresponds to details_from_extraction), likelihood expectations (corresponds to likelihood_without_documents), attachments, and post-attachment likelihood (incorporates likelihood_change_with_documents and Correct Items / Gaps details). It dynamically shifts CPT/HCPC labels depending on code format, resolves payer details from the persona `payer` block, and excludes version-suffixed persona PDFs case-insensitively.
 
+### Visual Scan Simulation (Non-AI-Friendly Look)
+
+- **Image-Based Rasterization**: Converts clean vector PDFs into flat, image-only documents to simulate scanned pages, preventing standard text selection and copy-pasting.
+- **Realistic Degradation Artifacts**: Simulates typical hardware artifacts including random page rotation (skew), CCD sensor line noise, paper grain, uneven scanning light gradients, dust/dirt speckles, and subtle lens blur.
+- **Adjustable Intensity**: Light, Medium, and Heavy presets customize the skew range, DPI resolution, noise level, and background paper tinting (e.g. aged/faded yellow paper).
 
 ### Concise Clinical Summary (v6)
 

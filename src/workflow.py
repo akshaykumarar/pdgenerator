@@ -263,6 +263,7 @@ def process_patient_workflow(
     generation_mode: dict = None,
     cancel_check: callable = None,
     archive_token: str = None,
+    scan_mode: bool | dict = False,
 ) -> str:
     """
     Main orchestration for a single patient.
@@ -443,6 +444,8 @@ def process_patient_workflow(
     # Ensure the patient's report sub-folder exists before writing
     os.makedirs(patient_report_folder, exist_ok=True)
 
+    written_pdf_paths = []
+
     # ── 8a. PERSONA ────────────────────────────────────────────────────────────
     if generation_mode["persona"] and result.patient_persona:
         persona_path = pdf_generator.create_persona_pdf(
@@ -455,6 +458,7 @@ def process_patient_workflow(
             output_folder=get_patient_persona_folder(patient_id),
             version=doc_version_str,
         )
+        written_pdf_paths.append(persona_path)
         pf = os.path.basename(persona_path)
         docs_written.append(pf)
         print(f"   👤 Persona → {pf}")
@@ -598,6 +602,7 @@ def process_patient_workflow(
                         os.remove(image_path)
                     except Exception as e:
                         print(f"      ⚠️  Could not remove temp image {image_path}: {e}")
+                written_pdf_paths.append(pdf_path)
                 rf = os.path.basename(pdf_path)
                 docs_written.append(rf)
                 print(f"      ✅ {rf}")
@@ -687,6 +692,7 @@ def process_patient_workflow(
                 version=doc_version_str,
             )
             if con_path:
+                written_pdf_paths.append(con_path)
                 sf = os.path.basename(con_path)
                 docs_written.append(sf)
                 print(f"   📊 Summary → {sf}")
@@ -712,6 +718,22 @@ def process_patient_workflow(
             print(f"   📝 Patient record updated: {os.path.basename(rec_path)}")
         except Exception as e:
             print(f"   ⚠️  Patient record write failed: {e}")
+
+    if scan_mode:
+        intensity = "medium"
+        if isinstance(scan_mode, dict):
+            intensity = scan_mode.get("intensity", "medium")
+        elif isinstance(scan_mode, str):
+            intensity = scan_mode
+        print(f"\n⚙️  Applying Scan Filter (intensity: {intensity}) to generated PDFs...")
+        from .doc_generation.scan_filter import apply_scan_filter
+        for path in written_pdf_paths:
+            if path and os.path.exists(path):
+                try:
+                    apply_scan_filter(path, intensity=intensity)
+                    print(f"   Scan filter applied to: {os.path.basename(path)}")
+                except Exception as e:
+                    print(f"   ⚠️  Scan filter failed for {os.path.basename(path)}: {e}")
 
     print(f"\n✅ Workflow complete for patient {patient_id}. {len(docs_written)} document(s) written.")
     return p_full_name
@@ -865,6 +887,7 @@ def render_patient_pdfs_from_content(
     summarize: bool = True,
     cancel_check: callable = None,
     archive_token: str = None,
+    scan_mode: bool | dict = False,
 ) -> list[str]:
     """
     Write PDFs from user-confirmed (possibly edited) content.
@@ -938,6 +961,8 @@ def render_patient_pdfs_from_content(
         patient_report_folder = get_patient_report_folder(patient_id, p_full_name)
     os.makedirs(patient_report_folder, exist_ok=True)
 
+    written_pdf_paths = []
+
     # ── Persona PDF ───────────────────────────────────────────────────────────
     if generation_mode.get("persona", False) and persona_obj:
         try:
@@ -946,6 +971,7 @@ def render_patient_pdfs_from_content(
                 image_map=None, mrn=current_mrn,
                 output_folder=get_patient_persona_folder(patient_id), version=doc_version_str,
             )
+            written_pdf_paths.append(persona_path)
             docs_written.append(os.path.basename(persona_path))
             print(f"   👤 Persona → {os.path.basename(persona_path)}")
         except Exception as e:
@@ -1031,6 +1057,7 @@ def render_patient_pdfs_from_content(
                         except Exception as e:
                             print(f"      ⚠️  Could not remove temp image {image_path}: {e}")
 
+                written_pdf_paths.append(pdf_path)
                 docs_written.append(os.path.basename(pdf_path))
                 print(f"      ✅ {os.path.basename(pdf_path)}")
             except Exception as e:
@@ -1075,10 +1102,27 @@ def render_patient_pdfs_from_content(
                 version=doc_version_str,
             )
             if sum_path:
+                written_pdf_paths.append(sum_path)
                 docs_written.append(os.path.basename(sum_path))
                 print(f"   📊 Summary → {os.path.basename(sum_path)}")
         except Exception as e:
             print(f"   ⚠️  Summary failed: {e}")
+
+    if scan_mode:
+        intensity = "medium"
+        if isinstance(scan_mode, dict):
+            intensity = scan_mode.get("intensity", "medium")
+        elif isinstance(scan_mode, str):
+            intensity = scan_mode
+        print(f"\n⚙️  Applying Scan Filter (intensity: {intensity}) to generated PDFs...")
+        from .doc_generation.scan_filter import apply_scan_filter
+        for path in written_pdf_paths:
+            if path and os.path.exists(path):
+                try:
+                    apply_scan_filter(path, intensity=intensity)
+                    print(f"   Scan filter applied to: {os.path.basename(path)}")
+                except Exception as e:
+                    print(f"   ⚠️  Scan filter failed for {os.path.basename(path)}: {e}")
 
     print(f"\n✅ {len(docs_written)} PDF(s) rendered from confirmed content.")
     return docs_written
