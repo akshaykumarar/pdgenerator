@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 
+
 <head>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
@@ -233,7 +234,8 @@
           <div class="col-span-2 bg-gray-50 p-2 rounded">
             <div class="flex items-center justify-between">
               <div class="text-[9px] text-gray-400 uppercase">Provider</div>
-              <select id="info-provider-mode" title="Switch between viewing the managing provider, insurance provider, or plan type"
+              <select id="info-provider-mode"
+                title="Switch between viewing the managing provider, insurance provider, or plan type"
                 class="text-[9px] border border-gray-200 rounded px-1 py-0.5 text-gray-600 bg-white">
                 <option value="provider" selected>Provider</option>
                 <option value="insurance_provider">Insurance Provider</option>
@@ -248,26 +250,30 @@
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <div class="text-[9px] text-gray-400 uppercase">Provider</div>
-                <select id="insurance-provider-select" title="Select the insurance provider" class="w-full text-[11px] border border-gray-200 rounded px-2 py-1 bg-white">
+                <select id="insurance-provider-select" title="Select the insurance provider"
+                  class="w-full text-[11px] border border-gray-200 rounded px-2 py-1 bg-white">
                   <option value="">Loading…</option>
                 </select>
               </div>
               <div>
                 <div class="text-[9px] text-gray-400 uppercase">Plan Type</div>
-                <select id="insurance-plan-type-select" title="Select the insurance plan type" class="w-full text-[11px] border border-gray-200 rounded px-2 py-1 bg-white">
+                <select id="insurance-plan-type-select" title="Select the insurance plan type"
+                  class="w-full text-[11px] border border-gray-200 rounded px-2 py-1 bg-white">
                   <option value="">—</option>
                 </select>
               </div>
               <div class="col-span-2">
                 <div class="text-[9px] text-gray-400 uppercase">Plan</div>
-                <select id="insurance-plan-select" title="Select the insurance plan" class="w-full text-[11px] border border-gray-200 rounded px-2 py-1 bg-white">
+                <select id="insurance-plan-select" title="Select the insurance plan"
+                  class="w-full text-[11px] border border-gray-200 rounded px-2 py-1 bg-white">
                   <option value="">—</option>
                 </select>
               </div>
             </div>
             <div class="flex items-center justify-between mt-1">
               <div class="text-[9px] text-gray-400">Auto-saved per patient</div>
-              <button id="insurance-clear-btn" title="Clear the saved insurance selection for this patient" class="text-[9px] text-gray-500 underline">Clear</button>
+              <button id="insurance-clear-btn" title="Clear the saved insurance selection for this patient"
+                class="text-[9px] text-gray-500 underline">Clear</button>
             </div>
           </div>
         </div>
@@ -320,13 +326,16 @@
       <div class="flex bg-white border-b border-gray-200 shrink-0 overflow-x-auto">
         <button onclick="switchClinicalTab('meds')" id="ctab-meds" title="View the patient's medication history"
           class="clinical-tab px-4 py-3 text-[10px] uppercase tracking-widest whitespace-nowrap tab-active">Medications</button>
-        <button onclick="switchClinicalTab('allergies')" id="ctab-allergies" title="View the patient's allergy information"
+        <button onclick="switchClinicalTab('allergies')" id="ctab-allergies"
+          title="View the patient's allergy information"
           class="clinical-tab px-4 py-3 text-[10px] uppercase tracking-widest whitespace-nowrap tab-inactive">Allergies</button>
         <button onclick="switchClinicalTab('therapy')" id="ctab-therapy" title="View the patient's therapy history"
           class="clinical-tab px-4 py-3 text-[10px] uppercase tracking-widest whitespace-nowrap tab-inactive">Therapy</button>
-        <button onclick="switchClinicalTab('procedures')" id="ctab-procedures" title="View the patient's procedure history"
+        <button onclick="switchClinicalTab('procedures')" id="ctab-procedures"
+          title="View the patient's procedure history"
           class="clinical-tab px-4 py-3 text-[10px] uppercase tracking-widest whitespace-nowrap tab-inactive">Procedures</button>
-        <button onclick="switchClinicalTab('encounters')" id="ctab-encounters" title="View the patient's encounter history"
+        <button onclick="switchClinicalTab('encounters')" id="ctab-encounters"
+          title="View the patient's encounter history"
           class="clinical-tab px-4 py-3 text-[10px] uppercase tracking-widest whitespace-nowrap tab-inactive">Encounters</button>
         <button onclick="switchClinicalTab('imaging')" id="ctab-imaging" title="View the patient's imaging history"
           class="clinical-tab px-4 py-3 text-[10px] uppercase tracking-widest whitespace-nowrap tab-inactive">Imaging</button>
@@ -348,15 +357,21 @@
         <textarea id="feedback-input" rows="3" placeholder="Optional feedback / instructions…"
           class="w-full border border-gray-200 rounded text-xs px-3 py-2 font-mono resize-none focus:ring-1 focus:ring-gray-900 focus:outline-none leading-relaxed placeholder-gray-300"></textarea>
         <div class="flex gap-4">
-          <label class="flex items-center gap-1.5 text-xs cursor-pointer" title="Generate patient persona PDF"><input type="checkbox" id="chk-persona" checked class="lg-chk"> Persona</label>
-          <label class="flex items-center gap-1.5 text-xs cursor-pointer" title="Generate clinical report PDFs"><input type="checkbox" id="chk-reports" checked class="lg-chk"> Reports</label>
-          <label class="flex items-center gap-1.5 text-xs cursor-pointer" title="Generate clinical summary PDF"><input type="checkbox" id="chk-summary" checked class="lg-chk"> Summary</label>
+          <label class="flex items-center gap-1.5 text-xs cursor-pointer" title="Generate patient persona PDF"><input
+              type="checkbox" id="chk-persona" checked class="lg-chk"> Persona</label>
+          <label class="flex items-center gap-1.5 text-xs cursor-pointer" title="Generate clinical report PDFs"><input
+              type="checkbox" id="chk-reports" checked class="lg-chk"> Reports</label>
+          <label class="flex items-center gap-1.5 text-xs cursor-pointer" title="Generate clinical summary PDF"><input
+              type="checkbox" id="chk-summary" checked class="lg-chk"> Summary</label>
         </div>
-        <div class="flex items-center justify-between border border-gray-200 px-3 py-1.5 rounded bg-gray-50 text-[10px]">
-          <label class="flex items-center gap-1.5 text-gray-500 cursor-pointer select-none" title="Apply a filter to make the PDFs look scanned">
+        <div
+          class="flex items-center justify-between border border-gray-200 px-3 py-1.5 rounded bg-gray-50 text-[10px]">
+          <label class="flex items-center gap-1.5 text-gray-500 cursor-pointer select-none"
+            title="Apply a filter to make the PDFs look scanned">
             <input type="checkbox" id="chk-scan-mode" class="w-2.5 h-2.5 rounded lg-chk"> Scanned/Non-AI Look
           </label>
-          <select id="scan-intensity-select" class="text-[9px] border border-gray-200 rounded px-1 py-0.5 bg-white text-gray-600 focus:outline-none">
+          <select id="scan-intensity-select"
+            class="text-[9px] border border-gray-200 rounded px-1 py-0.5 bg-white text-gray-600 focus:outline-none">
             <option value="light">Light</option>
             <option value="medium" selected>Medium</option>
             <option value="heavy">Heavy</option>
@@ -364,9 +379,10 @@
         </div>
 
         <div class="border border-gray-200 px-3 py-1.5 rounded bg-gray-50 text-[10px]">
-            <label class="flex items-center gap-1.5 text-gray-500 cursor-pointer select-none" title="Optimize data for prior authorization approval">
-                <input type="checkbox" id="chk-pa-optimize" class="w-2.5 h-2.5 rounded lg-chk"> PA Optimize (Realistic Data)
-            </label>
+          <label class="flex items-center gap-1.5 text-gray-500 cursor-pointer select-none"
+            title="Optimize data for prior authorization approval">
+            <input type="checkbox" id="chk-pa-optimize" class="w-2.5 h-2.5 rounded lg-chk"> PA Optimize (Realistic Data)
+          </label>
         </div>
 
         <button id="btn-generate" onclick="onGenerateClick()" title="Generate documents for the selected patient"
@@ -432,34 +448,41 @@
       </div>
       <div class="p-4 border-b border-gray-100 shrink-0 space-y-4">
         <div class="flex gap-4">
-          <label class="flex items-center gap-1.5 text-xs cursor-pointer" title="Generate patient persona PDF"><input type="checkbox" id="chk-batch-persona"
-              checked class="lg-chk"> Persona</label>
-          <label class="flex items-center gap-1.5 text-xs cursor-pointer" title="Generate clinical report PDFs"><input type="checkbox" id="chk-batch-reports"
-              checked class="lg-chk"> Reports</label>
-          <label class="flex items-center gap-1.5 text-xs cursor-pointer" title="Generate clinical summary PDF"><input type="checkbox" id="chk-batch-summary"
-              checked class="lg-chk"> Summary</label>
+          <label class="flex items-center gap-1.5 text-xs cursor-pointer" title="Generate patient persona PDF"><input
+              type="checkbox" id="chk-batch-persona" checked class="lg-chk"> Persona</label>
+          <label class="flex items-center gap-1.5 text-xs cursor-pointer" title="Generate clinical report PDFs"><input
+              type="checkbox" id="chk-batch-reports" checked class="lg-chk"> Reports</label>
+          <label class="flex items-center gap-1.5 text-xs cursor-pointer" title="Generate clinical summary PDF"><input
+              type="checkbox" id="chk-batch-summary" checked class="lg-chk"> Summary</label>
         </div>
-        <div class="flex items-center justify-between border border-gray-200 px-3 py-1.5 rounded bg-gray-50 text-[10px]">
-          <label class="flex items-center gap-1.5 text-gray-500 cursor-pointer select-none" title="Apply a filter to make the PDFs look scanned">
+        <div
+          class="flex items-center justify-between border border-gray-200 px-3 py-1.5 rounded bg-gray-50 text-[10px]">
+          <label class="flex items-center gap-1.5 text-gray-500 cursor-pointer select-none"
+            title="Apply a filter to make the PDFs look scanned">
             <input type="checkbox" id="chk-batch-scan-mode" class="w-2.5 h-2.5 rounded lg-chk"> Scanned/Non-AI Look
           </label>
-          <select id="batch-scan-intensity-select" class="text-[9px] border border-gray-200 rounded px-1 py-0.5 bg-white text-gray-600 focus:outline-none">
+          <select id="batch-scan-intensity-select"
+            class="text-[9px] border border-gray-200 rounded px-1 py-0.5 bg-white text-gray-600 focus:outline-none">
             <option value="light">Light</option>
             <option value="medium" selected>Medium</option>
             <option value="heavy">Heavy</option>
           </select>
         </div>
         <div class="border border-gray-200 px-3 py-1.5 rounded bg-gray-50 text-[10px]">
-            <label class="flex items-center gap-1.5 text-gray-500 cursor-pointer select-none" title="Optimize data for prior authorization approval">
-                <input type="checkbox" id="chk-batch-pa-optimize" class="w-2.5 h-2.5 rounded lg-chk"> PA Optimize (Realistic Data)
-            </label>
+          <label class="flex items-center gap-1.5 text-gray-500 cursor-pointer select-none"
+            title="Optimize data for prior authorization approval">
+            <input type="checkbox" id="chk-batch-pa-optimize" class="w-2.5 h-2.5 rounded lg-chk"> PA Optimize (Realistic
+            Data)
+          </label>
         </div>
         <textarea id="batch-feedback-input" rows="2" placeholder="Optional feedback / instructions for all patients…"
           class="w-full border border-gray-200 rounded text-xs px-3 py-2 font-mono resize-none focus:ring-1 focus:ring-gray-900 focus:outline-none leading-relaxed placeholder-gray-300"></textarea>
       </div>
       <div class="flex border-b border-gray-200">
-        <button onclick="switchBatchTab('individual')" id="batch-tab-individual" class="flex-1 py-2 text-xs font-bold text-center tab-active">Select Patients</button>
-        <button onclick="switchBatchTab('range')" id="batch-tab-range" class="flex-1 py-2 text-xs font-bold text-center tab-inactive">Select Ranges</button>
+        <button onclick="switchBatchTab('individual')" id="batch-tab-individual"
+          class="flex-1 py-2 text-xs font-bold text-center tab-active">Select Patients</button>
+        <button onclick="switchBatchTab('range')" id="batch-tab-range"
+          class="flex-1 py-2 text-xs font-bold text-center tab-inactive">Select Ranges</button>
       </div>
       <div id="batch-tab-content-individual" class="flex-1 overflow-y-auto custom-scrollbar p-4">
         <div class="flex justify-end mb-2">
@@ -477,15 +500,20 @@
             </tr>
           </thead>
           <tbody id="batch-patient-rows" class="divide-y divide-gray-100">
-            <tr><td colspan="6" class="py-3 text-gray-400 text-[11px] italic">Loading…</td></tr>
+            <tr>
+              <td colspan="6" class="py-3 text-gray-400 text-[11px] italic">Loading…</td>
+            </tr>
           </tbody>
         </table>
       </div>
       <div id="batch-tab-content-range" class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3 hidden">
         <div class="flex items-center gap-2">
-          <input type="text" id="range-from" placeholder="From" class="w-full text-xs border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-          <input type="text" id="range-to" placeholder="To" class="w-full text-xs border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-          <button onclick="addRange()" class="px-4 py-2 text-xs font-semibold text-white bg-gray-800 rounded-md hover:bg-gray-700">Add</button>
+          <input type="text" id="range-from" placeholder="From"
+            class="w-full text-xs border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+          <input type="text" id="range-to" placeholder="To"
+            class="w-full text-xs border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+          <button onclick="addRange()"
+            class="px-4 py-2 text-xs font-semibold text-white bg-gray-800 rounded-md hover:bg-gray-700">Add</button>
         </div>
         <div id="range-list" class="space-y-2"></div>
       </div>
@@ -508,7 +536,8 @@
           <h2 class="font-black text-sm">Patient Tracker Export</h2>
           <p class="text-xs text-gray-500 mt-0.5">Select patients to include in the tracker report</p>
         </div>
-        <button onclick="closeTrackerModal()"><span class="material-symbols-outlined text-gray-500">close</span></button>
+        <button onclick="closeTrackerModal()"><span
+            class="material-symbols-outlined text-gray-500">close</span></button>
       </div>
       <div class="p-4 border-b border-gray-100 flex justify-between items-center shrink-0">
         <span class="text-xs font-bold text-gray-700">Patient List</span>
@@ -524,7 +553,9 @@
             </tr>
           </thead>
           <tbody id="tracker-patient-rows" class="divide-y divide-gray-100">
-            <tr><td colspan="3" class="py-3 text-gray-400 text-[11px] italic">Loading…</td></tr>
+            <tr>
+              <td colspan="3" class="py-3 text-gray-400 text-[11px] italic">Loading…</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -532,7 +563,8 @@
         <button onclick="closeTrackerModal()"
           class="flex-1 py-2 border border-gray-300 text-xs font-bold hover:bg-gray-50 transition-colors">Cancel</button>
         <button onclick="startTrackerExport()"
-          class="flex-1 py-2 bg-gray-900 text-white text-xs font-black hover:bg-gray-700 transition-colors">Export Selected</button>
+          class="flex-1 py-2 bg-gray-900 text-white text-xs font-black hover:bg-gray-700 transition-colors">Export
+          Selected</button>
       </div>
     </div>
   </div>
@@ -758,7 +790,7 @@
         if (planSelect) {
           populatePlanOptions(planSelect, provider, planTypeSelect?.value, null);
         }
-        saveInsuranceSelection().catch(() => {});
+        saveInsuranceSelection().catch(() => { });
       });
       document.getElementById('insurance-plan-type-select')?.addEventListener('change', () => {
         const providerId = document.getElementById('insurance-provider-select').value;
@@ -766,10 +798,10 @@
         const planSelect = document.getElementById('insurance-plan-select');
         const planType = document.getElementById('insurance-plan-type-select').value;
         if (planSelect) populatePlanOptions(planSelect, provider, planType, null);
-        saveInsuranceSelection().catch(() => {});
+        saveInsuranceSelection().catch(() => { });
       });
       document.getElementById('insurance-plan-select')?.addEventListener('change', () => {
-        saveInsuranceSelection().catch(() => {});
+        saveInsuranceSelection().catch(() => { });
       });
       document.getElementById('insurance-clear-btn')?.addEventListener('click', (e) => {
         e.preventDefault();
@@ -955,7 +987,7 @@
       });
       if (!resp.ok) {
         let msg = 'Insurance save failed';
-        try { const j = await resp.json(); msg = j.error || msg; } catch (_) {}
+        try { const j = await resp.json(); msg = j.error || msg; } catch (_) { }
         throw new Error(msg);
       }
 
@@ -984,7 +1016,7 @@
       try {
         await fetch(`${API}/api/patient/${currentPatientId}/insurance`, { method: 'DELETE' });
         if (currentPatientId) onPatientChange();
-      } catch (_) {}
+      } catch (_) { }
     }
 
     function updateProviderDisplay(p) {
@@ -1557,14 +1589,14 @@
 
     // ── Patient Tracker Export ──────────────────────────────────────────────
     function openLocalFile(path) {
-        window.open('file://' + path, '_blank');
+      window.open('file://' + path, '_blank');
     }
 
     function openTrackerModal() {
       const modal = document.getElementById('tracker-modal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
-      
+
       document.getElementById('tracker-patient-rows').innerHTML = allPatientIds.map(id => {
         const name = patientNames[id] || ('Patient ' + id);
         return `
@@ -1574,7 +1606,7 @@
           <td class="py-2 text-[11px] font-medium">${name}</td>
         </tr>`;
       }).join('');
-      
+
       trackerSelectAll = true;
       document.querySelector('[onclick="toggleTrackerSelectAll()"]').textContent = 'Deselect All';
     }
@@ -1596,22 +1628,22 @@
       const selectedIds = checkboxes.filter(c => c.checked).map(c => c.value);
       if (!selectedIds.length) { alert('Select at least one patient.'); return; }
       closeTrackerModal();
-      
+
       clearLogs();
       appendLog('📤 Spawning Patient Tracker Export job...');
       appendLog(`📋 Selected Patients: ${selectedIds.join(', ')}`);
-      
+
       try {
         const r = await fetch(`${API}/api/patient_tracker_export`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ patient_ids: selectedIds })
         });
-        
+
         if (!r.ok) {
           throw new Error(await r.text() || 'Export failed');
         }
-        
+
         const blob = await r.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1621,7 +1653,7 @@
         a.click();
         a.remove();
         window.URL.revokeObjectURL(url);
-        
+
         appendLog('✅ Patient Tracker Export CSV downloaded successfully.');
         appendLog('📂 File saved to generated_output/patient-data/patient_tracker_export.csv');
       } catch (e) {
@@ -1633,9 +1665,9 @@
     // ── Batch ──────────────────────────────────────────────────────────────
     function openBatchModal() {
 
-    function openLocalFile(path) {
+      function openLocalFile(path) {
         window.open('file://' + path, '_blank');
-    }
+      }
       const modal = document.getElementById('batch-modal'); modal.classList.remove('hidden'); modal.classList.add('flex');
       const defaults = {
         persona: document.getElementById('chk-batch-persona').checked,
@@ -1663,42 +1695,42 @@
     let patientRanges = [];
 
     function switchBatchTab(tab) {
-        if (tab === 'individual') {
-            document.getElementById('batch-tab-individual').classList.add('tab-active');
-            document.getElementById('batch-tab-individual').classList.remove('tab-inactive');
-            document.getElementById('batch-tab-range').classList.add('tab-inactive');
-            document.getElementById('batch-tab-range').classList.remove('tab-active');
-            document.getElementById('batch-tab-content-individual').classList.remove('hidden');
-            document.getElementById('batch-tab-content-range').classList.add('hidden');
-        } else {
-            document.getElementById('batch-tab-individual').classList.add('tab-inactive');
-            document.getElementById('batch-tab-individual').classList.remove('tab-active');
-            document.getElementById('batch-tab-range').classList.add('tab-active');
-            document.getElementById('batch-tab-range').classList.remove('tab-inactive');
-            document.getElementById('batch-tab-content-individual').classList.add('hidden');
-            document.getElementById('batch-tab-content-range').classList.remove('hidden');
-        }
+      if (tab === 'individual') {
+        document.getElementById('batch-tab-individual').classList.add('tab-active');
+        document.getElementById('batch-tab-individual').classList.remove('tab-inactive');
+        document.getElementById('batch-tab-range').classList.add('tab-inactive');
+        document.getElementById('batch-tab-range').classList.remove('tab-active');
+        document.getElementById('batch-tab-content-individual').classList.remove('hidden');
+        document.getElementById('batch-tab-content-range').classList.add('hidden');
+      } else {
+        document.getElementById('batch-tab-individual').classList.add('tab-inactive');
+        document.getElementById('batch-tab-individual').classList.remove('tab-active');
+        document.getElementById('batch-tab-range').classList.add('tab-active');
+        document.getElementById('batch-tab-range').classList.remove('tab-inactive');
+        document.getElementById('batch-tab-content-individual').classList.add('hidden');
+        document.getElementById('batch-tab-content-range').classList.remove('hidden');
+      }
     }
 
     function addRange() {
-        const from = document.getElementById('range-from').value;
-        const to = document.getElementById('range-to').value;
-        if (from && to && !isNaN(from) && !isNaN(to)) {
-            patientRanges.push({from: parseInt(from), to: parseInt(to)});
-            renderRanges();
-            document.getElementById('range-from').value = '';
-            document.getElementById('range-to').value = '';
-        }
+      const from = document.getElementById('range-from').value;
+      const to = document.getElementById('range-to').value;
+      if (from && to && !isNaN(from) && !isNaN(to)) {
+        patientRanges.push({ from: parseInt(from), to: parseInt(to) });
+        renderRanges();
+        document.getElementById('range-from').value = '';
+        document.getElementById('range-to').value = '';
+      }
     }
 
     function removeRange(index) {
-        patientRanges.splice(index, 1);
-        renderRanges();
+      patientRanges.splice(index, 1);
+      renderRanges();
     }
 
     function renderRanges() {
-        const list = document.getElementById('range-list');
-        list.innerHTML = patientRanges.map((range, index) => `
+      const list = document.getElementById('range-list');
+      list.innerHTML = patientRanges.map((range, index) => `
             <div class="flex items-center justify-between bg-gray-100 p-2 rounded">
                 <span>Range: ${range.from} - ${range.to}</span>
                 <button onclick="removeRange(${index})" class="text-red-500 hover:text-red-700">Remove</button>
@@ -1713,73 +1745,73 @@
     }
 
     async function startBatch() {
-        const activeTab = document.querySelector('#batch-modal .tab-active').id;
-        let patientIds = [];
+      const activeTab = document.querySelector('#batch-modal .tab-active').id;
+      let patientIds = [];
 
-        if (activeTab === 'batch-tab-individual') {
-            const rows = [...document.querySelectorAll('#batch-patient-rows tr')];
-            const selectedRows = rows.filter(r => r.querySelector('.batch-select')?.checked);
-            if (!selectedRows.length) { alert('Select at least one patient.'); return; }
-            patientIds = selectedRows.map(r => r.getAttribute('data-patient-id'));
-        } else {
-            patientRanges.forEach(range => {
-                for (let i = range.from; i <= range.to; i++) {
-                    if (allPatientIds.includes(i.toString())) {
-                        patientIds.push(i.toString());
-                    }
-                }
-            });
-            if (!patientIds.length) { alert('No valid patients found in the selected ranges.'); return; }
-        }
+      if (activeTab === 'batch-tab-individual') {
+        const rows = [...document.querySelectorAll('#batch-patient-rows tr')];
+        const selectedRows = rows.filter(r => r.querySelector('.batch-select')?.checked);
+        if (!selectedRows.length) { alert('Select at least one patient.'); return; }
+        patientIds = selectedRows.map(r => r.getAttribute('data-patient-id'));
+      } else {
+        patientRanges.forEach(range => {
+          for (let i = range.from; i <= range.to; i++) {
+            if (allPatientIds.includes(i.toString())) {
+              patientIds.push(i.toString());
+            }
+          }
+        });
+        if (!patientIds.length) { alert('No valid patients found in the selected ranges.'); return; }
+      }
 
-        closeBatchModal(); clearLogs(); appendLog(`🚀 Batch: ${patientIds.length} patients…`);
-        document.getElementById('log-dot').style.background = '#3b82f6';
+      closeBatchModal(); clearLogs(); appendLog(`🚀 Batch: ${patientIds.length} patients…`);
+      document.getElementById('log-dot').style.background = '#3b82f6';
 
-        // Set Cancel state on main button
-        const btn = document.getElementById('btn-generate');
-        btn.onclick = cancelJob;
-        btn.classList.replace('bg-gray-900', 'bg-red-600');
-        document.getElementById('gen-icon').textContent = 'close';
-        document.getElementById('gen-label').textContent = 'Cancel Batch';
-        const defaultFeedback = document.getElementById('batch-feedback-input').value;
-        const defaultMode = {
-            persona: document.getElementById('chk-batch-persona').checked,
-            reports: document.getElementById('chk-batch-reports').checked,
-            summary: document.getElementById('chk-batch-summary').checked
+      // Set Cancel state on main button
+      const btn = document.getElementById('btn-generate');
+      btn.onclick = cancelJob;
+      btn.classList.replace('bg-gray-900', 'bg-red-600');
+      document.getElementById('gen-icon').textContent = 'close';
+      document.getElementById('gen-label').textContent = 'Cancel Batch';
+      const defaultFeedback = document.getElementById('batch-feedback-input').value;
+      const defaultMode = {
+        persona: document.getElementById('chk-batch-persona').checked,
+        reports: document.getElementById('chk-batch-reports').checked,
+        summary: document.getElementById('chk-batch-summary').checked
+      };
+
+      const patients = patientIds.map(patientId => ({
+        patient_id: patientId,
+        feedback: defaultFeedback,
+        generation_mode: defaultMode
+      }));
+
+      let scanMode = false;
+      if (document.getElementById('chk-batch-scan-mode')?.checked) {
+        scanMode = {
+          enabled: true,
+          intensity: document.getElementById('batch-scan-intensity-select')?.value || 'medium'
         };
-
-        const patients = patientIds.map(patientId => ({
-            patient_id: patientId,
-            feedback: defaultFeedback,
-            generation_mode: defaultMode
-        }));
-
-        let scanMode = false;
-        if (document.getElementById('chk-batch-scan-mode')?.checked) {
-            scanMode = {
-                enabled: true,
-                intensity: document.getElementById('batch-scan-intensity-select')?.value || 'medium'
-            };
-        }
-        const body = {
-            patients,
-            feedback: defaultFeedback,
-            generation_mode: defaultMode,
-            pa_optimize: document.getElementById('chk-batch-pa-optimize')?.checked || false,
-            scan_mode: scanMode
-        };
-        try {
-            const r = await fetch(`${API}/api/generate_all`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-            const d = await r.json(); currentJobId = d.job_id; logOffset = 0; appendLog('📋 Batch Job: ' + d.job_id);
-            pollTimer = setInterval(() => pollJob(d.job_id), 2000);
-        }
-        catch (e) { appendLog('❌ Batch failed: ' + e.message); }
+      }
+      const body = {
+        patients,
+        feedback: defaultFeedback,
+        generation_mode: defaultMode,
+        pa_optimize: document.getElementById('chk-batch-pa-optimize')?.checked || false,
+        scan_mode: scanMode
+      };
+      try {
+        const r = await fetch(`${API}/api/generate_all`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const d = await r.json(); currentJobId = d.job_id; logOffset = 0; appendLog('📋 Batch Job: ' + d.job_id);
+        pollTimer = setInterval(() => pollJob(d.job_id), 2000);
+      }
+      catch (e) { appendLog('❌ Batch failed: ' + e.message); }
     }
 
 
 
     function openLocalFile(path) {
-        window.open('file://' + path, '_blank');
+      window.open('file://' + path, '_blank');
     }
 
     // ── Batch Purge ────────────────────────────────────────────────────────
