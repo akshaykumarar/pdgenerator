@@ -74,6 +74,46 @@
       "procedure": "Bone harvest for facial reconstruction",
       "department": "Oral and Maxillofacial Surgery",
       "test_case": "Patient 5"
+    },
+    "43239": {
+      "procedure": "Upper GI Endoscopy with Biopsy (EGD)",
+      "department": "Gastroenterology",
+      "test_case": "Patient 6"
+    },
+    "45378": {
+      "procedure": "Colonoscopy, Diagnostic",
+      "department": "Gastroenterology",
+      "test_case": "Patient 7"
+    },
+    "S0190": {
+      "procedure": "Mifepristone (Abortion Medication)",
+      "department": "OB/GYN",
+      "test_case": "Patient 10"
+    },
+    "97110": {
+      "procedure": "Therapeutic Exercise (Post-injury Physiotherapy)",
+      "department": "Physical Therapy",
+      "test_case": "Patient 11"
+    },
+    "45380": {
+      "procedure": "Colonoscopy with Biopsy, Single or Multiple",
+      "department": "Gastroenterology",
+      "test_case": "Patient 12"
+    },
+    "43235": {
+      "procedure": "Esophagogastroduodenoscopy (EGD), Diagnostic",
+      "department": "Gastroenterology",
+      "test_case": "Patient 12"
+    },
+    "J0885": {
+      "procedure": "Injection, epoetin alfa (for non-ESRD use), 1000 units",
+      "department": "Gastroenterology",
+      "test_case": "Patient 14"
+    },
+    "J3490": {
+      "procedure": "Ozempic (semaglutide) injection",
+      "department": "Endocrinology",
+      "test_case": "Patient 17"
     }
   },
   "by_procedure": {
@@ -91,7 +131,18 @@
     "bilateral sagittal split osteotomy (bsso)": "21196",
     "bone graft (maxilla)": "21210",
     "impression and custom oral prosthesis for reconstruction": "21085",
-    "bone harvest for facial reconstruction": "21235"
+    "bone harvest for facial reconstruction": "21235",
+    "upper gi endoscopy with biopsy (egd)": "43239",
+    "colonoscopy, diagnostic": "45378",
+    "mifepristone (abortion medication)": "S0190",
+    "therapeutic exercise (post-injury physiotherapy)": "97110",
+    "colonoscopy with biopsy, single or multiple": "45380",
+    "esophagogastroduodenoscopy (egd), diagnostic": "43235",
+    "injection, epoetin alfa (for non-esrd use), 1000 units": "J0885",
+    "ozempic (semaglutide) injection": "J3490",
+    "jardiance (empagliflozin) tablet": "J3490",
+    "kerendia (finerenone) tablet": "J3490",
+    "tarpeyo (budesonide delayed release) capsule": "J3490"
   },
-  "updated_at": "2026-07-21T12:54:38.058459"
+  "updated_at": "2026-07-21T13:53:06.727650"
 }
