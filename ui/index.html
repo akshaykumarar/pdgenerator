@@ -398,13 +398,13 @@
         <div class="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 shrink-0">
           <div class="text-[9px] font-black uppercase tracking-widest text-gray-400">Documents</div>
           <div class="flex gap-1">
-            <button onclick="switchDocTab('all')" id="dtab-all"
+            <button onclick="switchDocTab('all')" id="dtab-all" title="Show all documents"
               class="px-2 py-0.5 text-[9px] font-black uppercase bg-gray-900 text-white rounded">All</button>
-            <button onclick="switchDocTab('persona')" id="dtab-persona"
+            <button onclick="switchDocTab('persona')" id="dtab-persona" title="Show only persona documents"
               class="px-2 py-0.5 text-[9px] font-bold uppercase text-gray-500 hover:bg-gray-100 rounded">P</button>
-            <button onclick="switchDocTab('reports')" id="dtab-reports"
+            <button onclick="switchDocTab('reports')" id="dtab-reports" title="Show only report documents"
               class="px-2 py-0.5 text-[9px] font-bold uppercase text-gray-500 hover:bg-gray-100 rounded">R</button>
-            <button onclick="switchDocTab('summary')" id="dtab-summary"
+            <button onclick="switchDocTab('summary')" id="dtab-summary" title="Show only summary documents"
               class="px-2 py-0.5 text-[9px] font-bold uppercase text-gray-500 hover:bg-gray-100 rounded">S</button>
           </div>
         </div>
@@ -1230,7 +1230,7 @@
       if (!files.length) { list.innerHTML = '<p class="text-[11px] text-gray-400 italic">No documents found</p>'; return; }
       const icons = { persona: 'person', reports: 'article', report: 'article', summary: 'summarize' };
       list.innerHTML = files.map(f => `
-        <a href="${API}/api/download/${currentPatientId}/${f.type}/${encodeURIComponent(f.name)}" target="_blank" rel="noopener"
+        <a onclick="openLocalFile('${f.path}')" 
            class="group flex items-center gap-2 p-2 hover:bg-gray-50 rounded transition-colors cursor-pointer">
             <span class="material-symbols-outlined text-gray-400 text-sm shrink-0" style="font-variation-settings:'FILL' 1;">${icons[f.type] || 'description'}</span>
             <div class="flex-1 min-w-0">
@@ -1488,6 +1488,10 @@
     }
 
     // ── Patient Tracker Export ──────────────────────────────────────────────
+    function openLocalFile(path) {
+        window.open('file://' + path, '_blank');
+    }
+
     function openTrackerModal() {
       const modal = document.getElementById('tracker-modal');
       modal.classList.remove('hidden');
@@ -1560,6 +1564,10 @@
 
     // ── Batch ──────────────────────────────────────────────────────────────
     function openBatchModal() {
+
+    function openLocalFile(path) {
+        window.open('file://' + path, '_blank');
+    }
       const modal = document.getElementById('batch-modal'); modal.classList.remove('hidden'); modal.classList.add('flex');
       const defaults = {
         persona: document.getElementById('chk-batch-persona').checked,
