@@ -366,7 +366,7 @@ pdgenerator/
 └── requirements.txt
 ```
 
-**Patient DB:** The active database lives at `src/core/patients_db.json` (gitignored). If a legacy `core/patients_db.json` (gitignored) exists, it is automatically migrated on first load. All patient persona database files (`*patients_db.json`), generated PDFs (`*.pdf`), and execution logs (`*.log`) are excluded from Git to protect patient data and prevent repository bloating.
+**Patient DB:** The database layer uses a storage repository abstraction (`PatientRepository`) supporting both local JSON files and PostgreSQL. By default, it uses the local JSON backend (`PATIENT_STORAGE_BACKEND=json`), saving data to `src/core/patients_db.json` (gitignored). If a legacy `core/patients_db.json` (gitignored) exists, it is automatically migrated on first load. Setting `PATIENT_STORAGE_BACKEND=postgres` routes database queries to PostgreSQL (currently configured as a stub pending schema approval). All patient persona database files (`*patients_db.json`), generated PDFs (`*.pdf`), and execution logs (`*.log`) are excluded from Git to protect patient data and prevent repository bloating.
 **Feedback history:** Per-patient feedback/history is stored under `generated_output/logs/<ID - Name - CPT - Outcome>...`.
 
 ### Key Files to Customize

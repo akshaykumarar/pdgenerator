@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+-#!/usr/bin/env python3
 import argparse
 import json
 import os
@@ -245,22 +245,16 @@ def main():
         sys.exit(1)
 
     # 1. Compact patient DB
-    patient_db._init_db()
     try:
-        with open(patient_db.DB_PATH, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    except Exception:
-        print(f"⚠️  Could not read patient DB at {patient_db.DB_PATH}")
-        data = {}
-
-    if isinstance(data, dict):
-        data, updated = _compact_patient_db(data, patient_ids, args.max_text, args.max_bio)
-        if updated and not args.dry_run:
-            with open(patient_db.DB_PATH, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2)
+        updated = patient_db.compact_patients(
+            patient_ids,
+            max_text=args.max_text,
+            max_bio=args.max_bio,
+            dry_run=args.dry_run
+        )
         print(f"✅ DB compacted: {updated} patient record(s) updated.")
-    else:
-        print("⚠️  Invalid DB format; skipping DB compaction.")
+    except Exception as e:
+        print(f"⚠️  Could not compact patient DB: {e}")
 
     # 2. Compact history logs + patient record feedback
     targets = patient_ids or set(data.keys())
