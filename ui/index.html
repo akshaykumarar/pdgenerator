@@ -435,182 +435,252 @@
     </aside>
   </main>
 
-  <!-- ═══ BATCH MODAL ══════════════════════════════════════════════════ -->
-  <div id="batch-modal"
+  <!-- ═══ OPERATIONS CONSOLE MODAL ════════════════════════════════════════ -->
+  <div id="ops-modal"
     class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center">
-    <div class="bg-white border border-gray-200 w-[460px] max-h-[80vh] flex flex-col overflow-hidden shadow-2xl">
+    <div class="bg-white border border-gray-200 w-[520px] max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+      
+      <!-- Modal Header -->
       <div class="p-5 border-b border-gray-200 flex justify-between items-center shrink-0">
         <div>
-          <h2 class="font-black text-sm">Batch Generation</h2>
-          <p class="text-xs text-gray-500 mt-0.5">Select patients to generate documents for</p>
+          <h2 class="font-black text-sm uppercase tracking-wider">Operations Console</h2>
+          <p class="text-xs text-gray-500 mt-0.5">Execute batch runs, tracker exports, or data purges</p>
         </div>
-        <button onclick="closeBatchModal()"><span class="material-symbols-outlined text-gray-500">close</span></button>
+        <button onclick="closeOpsModal()"><span class="material-symbols-outlined text-gray-500">close</span></button>
       </div>
-      <div class="p-4 border-b border-gray-100 shrink-0 space-y-4">
-        <div class="flex gap-4">
-          <label class="flex items-center gap-1.5 text-xs cursor-pointer" title="Generate patient persona PDF"><input
-              type="checkbox" id="chk-batch-persona" checked class="lg-chk"> Persona</label>
-          <label class="flex items-center gap-1.5 text-xs cursor-pointer" title="Generate clinical report PDFs"><input
-              type="checkbox" id="chk-batch-reports" checked class="lg-chk"> Reports</label>
-          <label class="flex items-center gap-1.5 text-xs cursor-pointer" title="Generate clinical summary PDF"><input
-              type="checkbox" id="chk-batch-summary" checked class="lg-chk"> Summary</label>
-        </div>
-        <div
-          class="flex items-center justify-between border border-gray-200 px-3 py-1.5 rounded bg-gray-50 text-[10px]">
-          <label class="flex items-center gap-1.5 text-gray-500 cursor-pointer select-none"
-            title="Apply a filter to make the PDFs look scanned">
-            <input type="checkbox" id="chk-batch-scan-mode" class="w-2.5 h-2.5 rounded lg-chk"> Scanned/Non-AI Look
-          </label>
-          <select id="batch-scan-intensity-select"
-            class="text-[9px] border border-gray-200 rounded px-1 py-0.5 bg-white text-gray-600 focus:outline-none">
-            <option value="light">Light</option>
-            <option value="medium" selected>Medium</option>
-            <option value="heavy">Heavy</option>
-          </select>
-        </div>
-        <div class="border border-gray-200 px-3 py-1.5 rounded bg-gray-50 text-[10px]">
-          <label class="flex items-center gap-1.5 text-gray-500 cursor-pointer select-none"
-            title="Optimize data for prior authorization approval">
-            <input type="checkbox" id="chk-batch-pa-optimize" class="w-2.5 h-2.5 rounded lg-chk"> PA Optimize (Realistic
-            Data)
-          </label>
-        </div>
-        <textarea id="batch-feedback-input" rows="2" placeholder="Optional feedback / instructions for all patients…"
-          class="w-full border border-gray-200 rounded text-xs px-3 py-2 font-mono resize-none focus:ring-1 focus:ring-gray-900 focus:outline-none leading-relaxed placeholder-gray-300"></textarea>
-      </div>
-      <div class="flex border-b border-gray-200">
-        <button onclick="switchBatchTab('individual')" id="batch-tab-individual"
-          class="flex-1 py-2 text-xs font-bold text-center tab-active">Select Patients</button>
-        <button onclick="switchBatchTab('range')" id="batch-tab-range"
-          class="flex-1 py-2 text-xs font-bold text-center tab-inactive">Select Ranges</button>
-      </div>
-      <div id="batch-tab-content-individual" class="flex-1 overflow-y-auto custom-scrollbar p-4">
-        <div class="flex justify-end mb-2">
-          <button onclick="toggleSelectAll()" class="text-[10px] text-gray-500 underline">Select All</button>
-        </div>
-        <table class="w-full text-xs border-collapse">
-          <thead>
-            <tr class="text-[9px] text-gray-400 uppercase tracking-wider border-b border-gray-200">
-              <th class="pb-2 text-left font-bold w-10">Select</th>
-              <th class="pb-2 text-left font-bold">Patient</th>
-              <th class="pb-2 text-left font-bold w-16">Persona</th>
-              <th class="pb-2 text-left font-bold w-16">Reports</th>
-              <th class="pb-2 text-left font-bold w-16">Summary</th>
-              <th class="pb-2 text-left font-bold">Feedback</th>
-            </tr>
-          </thead>
-          <tbody id="batch-patient-rows" class="divide-y divide-gray-100">
-            <tr>
-              <td colspan="6" class="py-3 text-gray-400 text-[11px] italic">Loading…</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div id="batch-tab-content-range" class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3 hidden">
-        <div class="flex items-center gap-2">
-          <input type="text" id="range-from" placeholder="From"
-            class="w-full text-xs border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-          <input type="text" id="range-to" placeholder="To"
-            class="w-full text-xs border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-          <button onclick="addRange()"
-            class="px-4 py-2 text-xs font-semibold text-white bg-gray-800 rounded-md hover:bg-gray-700">Add</button>
-        </div>
-        <div id="range-list" class="space-y-2"></div>
-      </div>
-      <div class="p-4 border-t border-gray-200 flex gap-3 shrink-0">
-        <button onclick="closeBatchModal()"
-          class="flex-1 py-2 border border-gray-300 text-xs font-bold hover:bg-gray-50 transition-colors">Cancel</button>
-        <button onclick="startBatch()"
-          class="flex-1 py-2 bg-gray-900 text-white text-xs font-black hover:bg-gray-700 transition-colors">Run
-          Batch</button>
-      </div>
-    </div>
-  </div>
 
-  <!-- ═══ TRACKER EXPORT MODAL ════════════════════════════════════════ -->
-  <div id="tracker-modal"
-    class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center">
-    <div class="bg-white border border-gray-200 w-[420px] max-h-[80vh] flex flex-col overflow-hidden shadow-2xl">
-      <div class="p-5 border-b border-gray-200 flex justify-between items-center shrink-0">
-        <div>
-          <h2 class="font-black text-sm">Patient Tracker Export</h2>
-          <p class="text-xs text-gray-500 mt-0.5">Select patients to include in the tracker report</p>
-        </div>
-        <button onclick="closeTrackerModal()"><span
-            class="material-symbols-outlined text-gray-500">close</span></button>
+      <!-- Tab Selectors -->
+      <div class="flex border-b border-gray-200 bg-gray-50 shrink-0 select-none">
+        <button onclick="switchOpsTab('generate')" id="ops-tab-generate"
+          class="flex-1 py-3 text-xs font-bold text-center tab-active transition-colors">Batch Generate</button>
+        <button onclick="switchOpsTab('export')" id="ops-tab-export"
+          class="flex-1 py-3 text-xs font-bold text-center tab-inactive transition-colors">Tracker Export</button>
+        <button onclick="switchOpsTab('purge')" id="ops-tab-purge"
+          class="flex-1 py-3 text-xs font-bold text-center tab-inactive transition-colors">Batch Purge</button>
       </div>
-      <div class="p-4 border-b border-gray-100 flex justify-between items-center shrink-0">
-        <span class="text-xs font-bold text-gray-700">Patient List</span>
-        <button onclick="toggleTrackerSelectAll()" class="text-[10px] text-gray-500 underline">Deselect All</button>
-      </div>
-      <div class="flex-1 overflow-y-auto custom-scrollbar p-4">
-        <table class="w-full text-xs border-collapse">
-          <thead>
-            <tr class="text-[9px] text-gray-400 uppercase tracking-wider border-b border-gray-200">
-              <th class="pb-2 text-left font-bold w-10">Select</th>
-              <th class="pb-2 text-left font-bold">Patient ID</th>
-              <th class="pb-2 text-left font-bold">Patient Name</th>
-            </tr>
-          </thead>
-          <tbody id="tracker-patient-rows" class="divide-y divide-gray-100">
-            <tr>
-              <td colspan="3" class="py-3 text-gray-400 text-[11px] italic">Loading…</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="p-4 border-t border-gray-200 flex gap-3 shrink-0">
-        <button onclick="closeTrackerModal()"
-          class="flex-1 py-2 border border-gray-300 text-xs font-bold hover:bg-gray-50 transition-colors">Cancel</button>
-        <button onclick="startTrackerExport()"
-          class="flex-1 py-2 bg-gray-900 text-white text-xs font-black hover:bg-gray-700 transition-colors">Export
-          Selected</button>
-      </div>
-    </div>
-  </div>
 
-  <!-- ═══ PURGE MODAL ══════════════════════════════════════════════════ -->
-  <div id="purge-modal"
-    class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center">
-    <div class="bg-white border border-gray-200 w-[420px] flex flex-col overflow-hidden shadow-2xl">
-      <div class="p-5 border-b border-gray-200 flex justify-between items-center shrink-0">
-        <div>
-          <h2 class="font-black text-sm">Purge Patient Data</h2>
-          <p class="text-xs text-gray-500 mt-0.5">Select what to delete or archive</p>
+      <!-- ─── Tab 1: Batch Generate Pane ─── -->
+      <div id="ops-pane-generate" class="flex-1 flex flex-col overflow-hidden">
+        <div class="p-4 border-b border-gray-100 shrink-0 space-y-4">
+          <div class="flex gap-4">
+            <label class="flex items-center gap-1.5 text-xs cursor-pointer" title="Generate patient persona PDF"><input
+                type="checkbox" id="chk-batch-persona" checked class="lg-chk"> Persona</label>
+            <label class="flex items-center gap-1.5 text-xs cursor-pointer" title="Generate clinical report PDFs"><input
+                type="checkbox" id="chk-batch-reports" checked class="lg-chk"> Reports</label>
+            <label class="flex items-center gap-1.5 text-xs cursor-pointer" title="Generate clinical summary PDF"><input
+                type="checkbox" id="chk-batch-summary" checked class="lg-chk"> Summary</label>
+          </div>
+          <div class="flex items-center justify-between border border-gray-200 px-3 py-1.5 rounded bg-gray-50 text-[10px]">
+            <label class="flex items-center gap-1.5 text-gray-500 cursor-pointer select-none"
+              title="Apply a filter to make the PDFs look scanned">
+              <input type="checkbox" id="chk-batch-scan-mode" class="w-2.5 h-2.5 rounded lg-chk"> Scanned/Non-AI Look
+            </label>
+            <select id="batch-scan-intensity-select"
+              class="text-[9px] border border-gray-200 rounded px-1 py-0.5 bg-white text-gray-600 focus:outline-none">
+              <option value="light">Light</option>
+              <option value="medium" selected>Medium</option>
+              <option value="heavy">Heavy</option>
+            </select>
+          </div>
+          <div class="border border-gray-200 px-3 py-1.5 rounded bg-gray-50 text-[10px]">
+            <label class="flex items-center gap-1.5 text-gray-500 cursor-pointer select-none"
+              title="Optimize data for prior authorization approval">
+              <input type="checkbox" id="chk-batch-pa-optimize" class="w-2.5 h-2.5 rounded lg-chk"> PA Optimize (Realistic Data)
+            </label>
+          </div>
+          <textarea id="batch-feedback-input" rows="2" placeholder="Optional feedback / instructions for all patients…"
+            class="w-full border border-gray-200 rounded text-xs px-3 py-2 font-mono resize-none focus:ring-1 focus:ring-gray-900 focus:outline-none leading-relaxed placeholder-gray-300"></textarea>
         </div>
-        <button onclick="closePurgeModal()"><span class="material-symbols-outlined text-gray-500">close</span></button>
-      </div>
-      <div class="p-4 space-y-4">
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <label class="flex items-center gap-2"><input type="checkbox" id="purge-persona" checked class="lg-chk">
-            Persona PDFs</label>
-          <label class="flex items-center gap-2"><input type="checkbox" id="purge-reports" checked class="lg-chk">
-            Reports</label>
-          <label class="flex items-center gap-2"><input type="checkbox" id="purge-summary" checked class="lg-chk">
-            Summary</label>
-          <label class="flex items-center gap-2"><input type="checkbox" id="purge-logs" checked class="lg-chk">
-            Logs</label>
-          <label class="flex items-center gap-2"><input type="checkbox" id="purge-db" class="lg-chk"> Patient
-            DB</label>
-          <label class="flex items-center gap-2"><input type="checkbox" id="purge-records" class="lg-chk">
-            Records</label>
-          <label class="flex items-center gap-2"><input type="checkbox" id="purge-debug" class="lg-chk"> Debug
-            State</label>
+        <div class="flex border-b border-gray-200">
+          <button onclick="switchBatchTab('range')" id="batch-tab-range"
+            class="flex-1 py-2 text-xs font-bold text-center tab-active">Select Ranges</button>
+          <button onclick="switchBatchTab('individual')" id="batch-tab-individual"
+            class="flex-1 py-2 text-xs font-bold text-center tab-inactive">Select Patients</button>
         </div>
-        <div class="bg-gray-50 border border-gray-200 p-3 rounded text-xs">
-          <div class="text-[9px] uppercase tracking-widest text-gray-400 mb-2">Action</div>
-          <label class="flex items-center gap-2"><input type="radio" name="purge-mode" value="delete" checked
-              class="lg-chk"> Delete</label>
-          <label class="flex items-center gap-2 mt-1"><input type="radio" name="purge-mode" value="archive"
-              class="lg-chk"> Archive</label>
+        <div id="batch-tab-content-individual" class="flex-1 overflow-y-auto custom-scrollbar p-4 hidden">
+          <div class="flex justify-end mb-2">
+            <button onclick="toggleSelectAll()" class="text-[10px] text-gray-500 underline">Select All</button>
+          </div>
+          <table class="w-full text-xs border-collapse">
+            <thead>
+              <tr class="text-[9px] text-gray-400 uppercase tracking-wider border-b border-gray-200">
+                <th class="pb-2 text-left font-bold w-10">Select</th>
+                <th class="pb-2 text-left font-bold">Patient</th>
+                <th class="pb-2 text-left font-bold w-16">Persona</th>
+                <th class="pb-2 text-left font-bold w-16">Reports</th>
+                <th class="pb-2 text-left font-bold w-16">Summary</th>
+                <th class="pb-2 text-left font-bold">Feedback</th>
+              </tr>
+            </thead>
+            <tbody id="batch-patient-rows" class="divide-y divide-gray-100">
+              <tr>
+                <td colspan="6" class="py-3 text-gray-400 text-[11px] italic">Loading…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="batch-tab-content-range" class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+          <div class="flex items-center gap-2">
+            <input type="text" id="range-from" placeholder="From"
+              class="w-full text-xs border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            <input type="text" id="range-to" placeholder="To"
+              class="w-full text-xs border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            <button onclick="addRange()"
+              class="px-4 py-2 text-xs font-semibold text-white bg-gray-800 rounded-md hover:bg-gray-700">Add</button>
+          </div>
+          <div id="range-list" class="space-y-2"></div>
+        </div>
+        <div class="p-4 border-t border-gray-200 flex gap-3 shrink-0 bg-gray-50">
+          <button onclick="closeOpsModal()"
+            class="flex-1 py-2 border border-gray-300 text-xs font-bold hover:bg-gray-100 transition-colors bg-white">Cancel</button>
+          <button onclick="startBatch()"
+            class="flex-1 py-2 bg-gray-900 text-white text-xs font-black hover:bg-gray-700 transition-colors">Run Batch</button>
         </div>
       </div>
-      <div class="p-4 border-t border-gray-200 flex gap-3 shrink-0">
-        <button onclick="closePurgeModal()"
-          class="flex-1 py-2 border border-gray-300 text-xs font-bold hover:bg-gray-50 transition-colors">Cancel</button>
-        <button onclick="confirmPurge()"
-          class="flex-1 py-2 bg-red-600 text-white text-xs font-black hover:bg-red-500 transition-colors">Purge</button>
+
+      <!-- ─── Tab 2: Tracker Export Pane ─── -->
+      <div id="ops-pane-export" class="flex-1 flex flex-col overflow-hidden hidden">
+        <!-- Selection Tabs (Range vs Individual) -->
+        <div class="flex border-b border-gray-200 shrink-0">
+          <button onclick="switchTrackerTab('range')" id="tracker-tab-range"
+            class="flex-1 py-2 text-xs font-bold text-center tab-active">Select Ranges</button>
+          <button onclick="switchTrackerTab('individual')" id="tracker-tab-individual"
+            class="flex-1 py-2 text-xs font-bold text-center tab-inactive">Select Patients</button>
+        </div>
+        
+        <!-- Range Content -->
+        <div id="tracker-tab-content-range" class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+          <div class="flex items-center gap-2">
+            <input type="text" id="tracker-range-from" placeholder="From"
+              class="w-full text-xs border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            <input type="text" id="tracker-range-to" placeholder="To"
+              class="w-full text-xs border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            <button onclick="addTrackerRange()"
+              class="px-4 py-2 text-xs font-semibold text-white bg-gray-800 rounded-md hover:bg-gray-700">Add</button>
+          </div>
+          <div id="tracker-range-list" class="space-y-2"></div>
+        </div>
+
+        <!-- Individual Checklist Content -->
+        <div id="tracker-tab-content-individual" class="flex-1 overflow-y-auto custom-scrollbar p-4 hidden">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-bold text-gray-700">Patient List</span>
+            <button onclick="toggleTrackerSelectAll()" class="text-[10px] text-gray-500 underline">Deselect All</button>
+          </div>
+          <table class="w-full text-xs border-collapse">
+            <thead>
+              <tr class="text-[9px] text-gray-400 uppercase tracking-wider border-b border-gray-200">
+                <th class="pb-2 text-left font-bold w-10">Select</th>
+                <th class="pb-2 text-left font-bold">Patient ID</th>
+                <th class="pb-2 text-left font-bold">Patient Name</th>
+              </tr>
+            </thead>
+            <tbody id="tracker-patient-rows" class="divide-y divide-gray-100">
+              <tr>
+                <td colspan="3" class="py-3 text-gray-400 text-[11px] italic">Loading…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="p-4 border-t border-gray-200 flex gap-3 shrink-0 bg-gray-50">
+          <button onclick="closeOpsModal()"
+            class="flex-1 py-2 border border-gray-300 text-xs font-bold hover:bg-gray-100 transition-colors bg-white">Cancel</button>
+          <button onclick="startTrackerExport()"
+            class="flex-1 py-2 bg-gray-900 text-white text-xs font-black hover:bg-gray-700 transition-colors">Export Selected</button>
+        </div>
       </div>
+
+      <!-- ─── Tab 3: Batch Purge Pane ─── -->
+      <div id="ops-pane-purge" class="flex-1 flex flex-col overflow-hidden hidden">
+        <!-- Purge Target Config & Action Mode -->
+        <div class="p-4 border-b border-gray-100 shrink-0 space-y-3">
+          <div class="text-[9px] uppercase tracking-widest text-gray-400 font-black">Purge Targets</div>
+          <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" id="purge-batch-persona" checked class="lg-chk"> Persona PDFs
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" id="purge-batch-reports" checked class="lg-chk"> Reports (DOC-*)
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" id="purge-batch-summary" checked class="lg-chk"> Summary PDFs
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" id="purge-batch-logs" checked class="lg-chk"> Logs
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" id="purge-batch-db" class="lg-chk"> Patient DB entries
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" id="purge-batch-records" class="lg-chk"> Text Records
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" id="purge-batch-debug" class="lg-chk"> Debug States
+            </label>
+          </div>
+          
+          <div class="flex gap-4 border-t border-gray-100 pt-3">
+            <div class="text-xs font-bold text-gray-700 flex items-center shrink-0">Action:</div>
+            <label class="flex items-center gap-1.5 text-xs cursor-pointer select-none">
+              <input type="radio" name="purge-batch-mode" value="delete" checked class="lg-chk"> Delete (Permanent)
+            </label>
+            <label class="flex items-center gap-1.5 text-xs cursor-pointer select-none">
+              <input type="radio" name="purge-batch-mode" value="archive" class="lg-chk"> Archive (Move to Archive)
+            </label>
+          </div>
+        </div>
+        
+        <!-- Selection Tabs (Individual vs Range) -->
+        <div class="flex border-b border-gray-200 shrink-0">
+          <button onclick="switchPurgeTab('range')" id="purge-tab-range"
+            class="flex-1 py-2 text-xs font-bold text-center tab-active">Select Ranges</button>
+          <button onclick="switchPurgeTab('individual')" id="purge-tab-individual"
+            class="flex-1 py-2 text-xs font-bold text-center tab-inactive">Select Patients</button>
+        </div>
+        
+        <!-- Patient Checklist -->
+        <div id="purge-tab-content-individual" class="flex-1 overflow-y-auto custom-scrollbar p-4 hidden">
+          <div class="flex justify-end mb-2">
+            <button onclick="togglePurgeSelectAll()" class="text-[10px] text-gray-500 underline">Select All</button>
+          </div>
+          <table class="w-full text-xs border-collapse">
+            <thead>
+              <tr class="text-[9px] text-gray-400 uppercase tracking-wider border-b border-gray-200">
+                <th class="pb-2 text-left font-bold w-10">Select</th>
+                <th class="pb-2 text-left font-bold">Patient ID</th>
+                <th class="pb-2 text-left font-bold">Patient Name</th>
+              </tr>
+            </thead>
+            <tbody id="purge-patient-rows" class="divide-y divide-gray-100">
+              <tr>
+                <td colspan="3" class="py-3 text-gray-400 text-[11px] italic">Loading…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Range Selector -->
+        <div id="purge-tab-content-range" class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+          <div class="flex items-center gap-2">
+            <input type="text" id="purge-range-from" placeholder="From"
+              class="w-full text-xs border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            <input type="text" id="purge-range-to" placeholder="To"
+              class="w-full text-xs border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            <button onclick="addPurgeRange()"
+              class="px-4 py-2 text-xs font-semibold text-white bg-gray-800 rounded-md hover:bg-gray-700">Add</button>
+          </div>
+          <div id="purge-range-list" class="space-y-2"></div>
+        </div>
+        
+        <div class="p-4 border-t border-gray-200 flex gap-3 shrink-0 bg-gray-50">
+          <button onclick="closeOpsModal()"
+            class="flex-1 py-2 border border-gray-300 text-xs font-bold hover:bg-gray-100 transition-colors bg-white">Cancel</button>
+          <button onclick="startBatchPurge()"
+            class="flex-1 py-2 bg-red-600 text-white text-xs font-black hover:bg-red-500 transition-colors">Execute Purge</button>
+        </div>
+      </div>
+      
     </div>
   </div>
 
@@ -807,9 +877,7 @@
         e.preventDefault();
         clearInsuranceSelection();
       });
-      document.getElementById('batch-modal').addEventListener('click', function (e) { if (e.target === this) closeBatchModal(); });
-      document.getElementById('tracker-modal').addEventListener('click', function (e) { if (e.target === this) closeTrackerModal(); });
-      document.getElementById('purge-modal').addEventListener('click', function (e) { if (e.target === this) closePurgeModal(); });
+      document.getElementById('ops-modal')?.addEventListener('click', function (e) { if (e.target === this) closeOpsModal(); });
       ['persona', 'reports', 'summary'].forEach(type => {
         document.getElementById(`chk-batch-${type}`)?.addEventListener('change', (e) => {
           document.querySelectorAll(`.batch-${type}`).forEach(chk => chk.checked = e.target.checked);
@@ -1085,53 +1153,7 @@
 
     function openPurgeModal() {
       if (!currentPatientId) { alert('Select a patient first.'); return; }
-      const modal = document.getElementById('purge-modal');
-      modal.classList.remove('hidden'); modal.classList.add('flex');
-    }
-
-    function closePurgeModal() {
-      const modal = document.getElementById('purge-modal');
-      modal.classList.add('hidden'); modal.classList.remove('flex');
-    }
-
-    async function confirmPurge() {
-      if (!currentPatientId) { alert('Select a patient first.'); return; }
-      const targets = [];
-      if (document.getElementById('purge-persona').checked) targets.push('persona');
-      if (document.getElementById('purge-reports').checked) targets.push('reports');
-      if (document.getElementById('purge-summary').checked) targets.push('summary');
-      if (document.getElementById('purge-logs').checked) targets.push('logs');
-      if (document.getElementById('purge-db').checked) targets.push('db');
-      if (document.getElementById('purge-records').checked) targets.push('records');
-      if (document.getElementById('purge-debug').checked) targets.push('debug');
-      if (!targets.length) { alert('Select at least one item to purge.'); return; }
-      const mode = document.querySelector('input[name=\"purge-mode\"]:checked')?.value || 'delete';
-      const extra = targets.includes('db') ? '\\n\\nNote: Purging Patient DB will also clear the saved insurance selection for this patient.' : '';
-      const ok = confirm(`Permanently ${mode} selected data for Patient ${currentPatientId}? The test case remains.${extra}`);
-      if (!ok) return;
-      try {
-        appendLog(`🗑️ Purging patient ${currentPatientId} (${mode})…`);
-        const r = await fetch(`${API}/api/purge`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ target: 'patient', patient_id: currentPatientId, mode, targets })
-        });
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error || 'Purge failed');
-        appendLog(`✅ ${d.message || 'Patient data updated.'}`);
-        closePurgeModal();
-        clearIdentityOnly();
-        setDocList([]);
-        loadDocuments(currentPatientId);
-        try {
-          const r2 = await fetch(`${API}/api/patient/${currentPatientId}`);
-          const d2 = await r2.json();
-          currentCaseDetails = d2.case_details;
-          populateCaseInfo(d2.case_details);
-        } catch (e) { }
-      } catch (e) {
-        appendLog('❌ Purge failed: ' + e.message);
-      }
+      openOpsModal('purge');
     }
 
     // ── Clinical Tabs ──────────────────────────────────────────────────────
@@ -1587,16 +1609,100 @@
       } catch (e) { appendLog('❌ PDF rendering failed: ' + e.message); resetGenerateBtn(); }
     }
 
-    // ── Patient Tracker Export ──────────────────────────────────────────────
-    function openLocalFile(path) {
-      window.open('file://' + path, '_blank');
-    }
+    // ── Operations Console (Ops Modal) ──────────────────────────────────────
+    let activeOpsTab = 'generate';
+    let purgeRanges = [];
+    let purgeSelectAll = true;
+    let trackerRanges = [];
 
-    function openTrackerModal() {
-      const modal = document.getElementById('tracker-modal');
+    function openOpsModal(tab = 'generate') {
+      const modal = document.getElementById('ops-modal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
 
+      // Populate list tables
+      populateBatchPatients();
+      populateTrackerPatients();
+      populatePurgePatients(tab === 'purge'); // if opened from sidebar purge button, we pre-select the active patient
+
+      // Reset all ranges
+      patientRanges = [];
+      renderRanges();
+      trackerRanges = [];
+      renderTrackerRanges();
+      purgeRanges = [];
+      renderPurgeRanges();
+
+      // Reset tab views to Range selections as default
+      switchBatchTab('range');
+      switchTrackerTab('range');
+      if (tab === 'purge' && currentPatientId) {
+        // If opened for a specific active patient, default to individual tab to show that patient is checked
+        switchPurgeTab('individual');
+      } else {
+        switchPurgeTab('range');
+      }
+
+      switchOpsTab(tab);
+    }
+
+    function closeOpsModal() {
+      const modal = document.getElementById('ops-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // Compatibility wrappers for existing HTML event callbacks
+    function openBatchModal() { openOpsModal('generate'); }
+    function closeBatchModal() { closeOpsModal(); }
+    function openTrackerModal() { openOpsModal('export'); }
+    function closeTrackerModal() { closeOpsModal(); }
+    function openPurgeModal() { openOpsModal('purge'); }
+    function closePurgeModal() { closeOpsModal(); }
+
+    function switchOpsTab(tab) {
+      activeOpsTab = tab;
+      
+      // Update Tab Buttons
+      ['generate', 'export', 'purge'].forEach(t => {
+        const btn = document.getElementById(`ops-tab-${t}`);
+        const pane = document.getElementById(`ops-pane-${t}`);
+        if (t === tab) {
+          btn.className = "flex-1 py-3 text-xs font-bold text-center tab-active transition-colors";
+          pane.classList.remove('hidden');
+        } else {
+          btn.className = "flex-1 py-3 text-xs font-bold text-center tab-inactive transition-colors";
+          pane.classList.add('hidden');
+        }
+      });
+    }
+
+    // --- Batch Generate helpers ---
+    function populateBatchPatients() {
+      const defaults = {
+        persona: document.getElementById('chk-batch-persona').checked,
+        reports: document.getElementById('chk-batch-reports').checked,
+        summary: document.getElementById('chk-batch-summary').checked
+      };
+      document.getElementById('batch-patient-rows').innerHTML = allPatientIds.map(id => `
+        <tr data-patient-id="${id}" class="hover:bg-gray-50">
+          <td class="py-2 pr-2"><input type="checkbox" class="batch-select lg-chk" value="${id}" checked></td>
+          <td class="py-2 pr-4 text-[11px] font-medium">Patient ${id}</td>
+          <td class="py-2 pr-2"><input type="checkbox" class="batch-doc batch-persona lg-chk" ${defaults.persona ? 'checked' : ''}></td>
+          <td class="py-2 pr-2"><input type="checkbox" class="batch-doc batch-reports lg-chk" ${defaults.reports ? 'checked' : ''}></td>
+          <td class="py-2 pr-2"><input type="checkbox" class="batch-doc batch-summary lg-chk" ${defaults.summary ? 'checked' : ''}></td>
+          <td class="py-2">
+            <input type="text" class="batch-feedback w-full text-[11px] border border-gray-200 rounded px-2 py-1"
+                   placeholder="Optional feedback">
+          </td>
+        </tr>`).join('');
+      batchSelectAll = true;
+      const selectAllBtn = document.querySelector('[onclick="toggleSelectAll()"]');
+      if (selectAllBtn) selectAllBtn.textContent = 'Deselect All';
+    }
+
+    // --- Tracker Export helpers ---
+    function populateTrackerPatients() {
       document.getElementById('tracker-patient-rows').innerHTML = allPatientIds.map(id => {
         const name = patientNames[id] || ('Patient ' + id);
         return `
@@ -1606,38 +1712,230 @@
           <td class="py-2 text-[11px] font-medium">${name}</td>
         </tr>`;
       }).join('');
-
       trackerSelectAll = true;
-      document.querySelector('[onclick="toggleTrackerSelectAll()"]').textContent = 'Deselect All';
+      const selectAllBtn = document.querySelector('[onclick="toggleTrackerSelectAll()"]');
+      if (selectAllBtn) selectAllBtn.textContent = 'Deselect All';
     }
 
-    function closeTrackerModal() {
-      const modal = document.getElementById('tracker-modal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
+    // --- Batch Purge helpers ---
+    function populatePurgePatients(isolateActivePatient = false) {
+      document.getElementById('purge-patient-rows').innerHTML = allPatientIds.map(id => {
+        const name = patientNames[id] || ('Patient ' + id);
+        // If isolateActivePatient is true and there is a currentPatientId, check only that patient
+        const isChecked = isolateActivePatient && currentPatientId ? (id === currentPatientId) : true;
+        return `
+        <tr class="hover:bg-gray-50">
+          <td class="py-2 pr-2"><input type="checkbox" class="purge-patient-select lg-chk" value="${id}" ${isChecked ? 'checked' : ''}></td>
+          <td class="py-2 pr-4 text-[11px] font-mono">${id}</td>
+          <td class="py-2 text-[11px] font-medium">${name}</td>
+        </tr>`;
+      }).join('');
+      purgeSelectAll = !(isolateActivePatient && currentPatientId);
+      const selectAllBtn = document.querySelector('[onclick="togglePurgeSelectAll()"]');
+      if (selectAllBtn) selectAllBtn.textContent = purgeSelectAll ? 'Deselect All' : 'Select All';
     }
 
-    function toggleTrackerSelectAll() {
-      trackerSelectAll = !trackerSelectAll;
-      document.querySelectorAll('.tracker-patient-select').forEach(c => c.checked = trackerSelectAll);
-      document.querySelector('[onclick="toggleTrackerSelectAll()"]').textContent = trackerSelectAll ? 'Deselect All' : 'Select All';
+    function togglePurgeSelectAll() {
+      purgeSelectAll = !purgeSelectAll;
+      document.querySelectorAll('.purge-patient-select').forEach(c => c.checked = purgeSelectAll);
+      document.querySelector('[onclick="togglePurgeSelectAll()"]').textContent = purgeSelectAll ? 'Deselect All' : 'Select All';
+    }
+
+    function switchTrackerTab(tab) {
+      if (tab === 'individual') {
+        document.getElementById('tracker-tab-individual').classList.add('tab-active');
+        document.getElementById('tracker-tab-individual').classList.remove('tab-inactive');
+        document.getElementById('tracker-tab-range').classList.add('tab-inactive');
+        document.getElementById('tracker-tab-range').classList.remove('tab-active');
+        document.getElementById('tracker-tab-content-individual').classList.remove('hidden');
+        document.getElementById('tracker-tab-content-range').classList.add('hidden');
+      } else {
+        document.getElementById('tracker-tab-individual').classList.add('tab-inactive');
+        document.getElementById('tracker-tab-individual').classList.remove('tab-active');
+        document.getElementById('tracker-tab-range').classList.add('tab-active');
+        document.getElementById('tracker-tab-range').classList.remove('tab-inactive');
+        document.getElementById('tracker-tab-content-individual').classList.add('hidden');
+        document.getElementById('tracker-tab-content-range').classList.remove('hidden');
+      }
+    }
+
+    function addTrackerRange() {
+      const from = document.getElementById('tracker-range-from').value;
+      const to = document.getElementById('tracker-range-to').value;
+      if (from && to && !isNaN(from) && !isNaN(to)) {
+        trackerRanges.push({ from: parseInt(from), to: parseInt(to) });
+        renderTrackerRanges();
+        document.getElementById('tracker-range-from').value = '';
+        document.getElementById('tracker-range-to').value = '';
+      }
+    }
+
+    function removeTrackerRange(index) {
+      trackerRanges.splice(index, 1);
+      renderTrackerRanges();
+    }
+
+    function renderTrackerRanges() {
+      const list = document.getElementById('tracker-range-list');
+      list.innerHTML = trackerRanges.map((range, index) => `
+        <div class="flex items-center justify-between bg-gray-100 p-2 rounded text-xs">
+          <span>Range: ${range.from} - ${range.to}</span>
+          <button onclick="removeTrackerRange(${index})" class="text-red-500 hover:text-red-700">Remove</button>
+        </div>`).join('');
+    }
+
+    function switchPurgeTab(tab) {
+      if (tab === 'individual') {
+        document.getElementById('purge-tab-individual').classList.add('tab-active');
+        document.getElementById('purge-tab-individual').classList.remove('tab-inactive');
+        document.getElementById('purge-tab-range').classList.add('tab-inactive');
+        document.getElementById('purge-tab-range').classList.remove('tab-active');
+        document.getElementById('purge-tab-content-individual').classList.remove('hidden');
+        document.getElementById('purge-tab-content-range').classList.add('hidden');
+      } else {
+        document.getElementById('purge-tab-individual').classList.add('tab-inactive');
+        document.getElementById('purge-tab-individual').classList.remove('tab-active');
+        document.getElementById('purge-tab-range').classList.add('tab-active');
+        document.getElementById('purge-tab-range').classList.remove('tab-inactive');
+        document.getElementById('purge-tab-content-individual').classList.add('hidden');
+        document.getElementById('purge-tab-content-range').classList.remove('hidden');
+      }
+    }
+
+    function addPurgeRange() {
+      const from = document.getElementById('purge-range-from').value;
+      const to = document.getElementById('purge-range-to').value;
+      if (from && to && !isNaN(from) && !isNaN(to)) {
+        purgeRanges.push({ from: parseInt(from), to: parseInt(to) });
+        renderPurgeRanges();
+        document.getElementById('purge-range-from').value = '';
+        document.getElementById('purge-range-to').value = '';
+      }
+    }
+
+    function removePurgeRange(index) {
+      purgeRanges.splice(index, 1);
+      renderPurgeRanges();
+    }
+
+    function renderPurgeRanges() {
+      const list = document.getElementById('purge-range-list');
+      list.innerHTML = purgeRanges.map((range, index) => `
+        <div class="flex items-center justify-between bg-gray-100 p-2 rounded text-xs">
+          <span>Range: ${range.from} - ${range.to}</span>
+          <button onclick="removePurgeRange(${index})" class="text-red-500 hover:text-red-700">Remove</button>
+        </div>`).join('');
+    }
+
+    async function startBatchPurge() {
+      const activeTab = document.querySelector('#ops-pane-purge .tab-active').id;
+      let patientIds = [];
+
+      if (activeTab === 'purge-tab-individual') {
+        const checkboxes = [...document.querySelectorAll('.purge-patient-select')];
+        patientIds = checkboxes.filter(c => c.checked).map(c => c.value);
+        if (!patientIds.length) { alert('Select at least one patient.'); return; }
+      } else {
+        if (!purgeRanges || purgeRanges.length === 0) {
+          alert('Range list is empty. Please add at least one valid range.');
+          return;
+        }
+        purgeRanges.forEach(range => {
+          for (let i = range.from; i <= range.to; i++) {
+            if (allPatientIds.includes(i.toString())) {
+              patientIds.push(i.toString());
+            }
+          }
+        });
+        if (!patientIds.length) {
+          alert('No valid patient IDs found within the specified range(s) (e.g. valid IDs: ' + allPatientIds.slice(0, 5).join(', ') + '...).');
+          return;
+        }
+      }
+
+      const targets = [];
+      if (document.getElementById('purge-batch-persona').checked) targets.push('persona');
+      if (document.getElementById('purge-batch-reports').checked) targets.push('reports');
+      if (document.getElementById('purge-batch-summary').checked) targets.push('summary');
+      if (document.getElementById('purge-batch-logs').checked) targets.push('logs');
+      if (document.getElementById('purge-batch-db').checked) targets.push('db');
+      if (document.getElementById('purge-batch-records').checked) targets.push('records');
+      if (document.getElementById('purge-batch-debug').checked) targets.push('debug');
+      
+      if (!targets.length) { alert('Select at least one item type to purge.'); return; }
+      const mode = document.querySelector('input[name="purge-batch-mode"]:checked')?.value || 'delete';
+      
+      const extra = targets.includes('db') ? '\n\nNote: Purging Patient DB will also clear the saved insurance selection for the purged patients.' : '';
+      const ok = confirm(`Permanently ${mode} selected data for Patient(s): ${patientIds.join(', ')}? The raw test cases remain.${extra}`);
+      if (!ok) return;
+
+      closeOpsModal();
+      clearLogs();
+      appendLog(`🗑️ Starting Batch Purge (${mode}) for ${patientIds.length} patient(s)…`);
+
+      try {
+        const r = await fetch(`${API}/api/purge`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target: 'patient', patient_ids: patientIds, mode, targets })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Purge failed');
+        appendLog(`✅ ${d.message || 'Batch Purge completed successfully.'}`);
+        
+        // Refresh sidebar active patient info if active patient was purged
+        if (currentPatientId && patientIds.includes(currentPatientId)) {
+          clearIdentityOnly();
+          setDocList([]);
+          loadDocuments(currentPatientId);
+          try {
+            const r2 = await fetch(`${API}/api/patient/${currentPatientId}`);
+            const d2 = await r2.json();
+            currentCaseDetails = d2.case_details;
+            populateCaseInfo(d2.case_details);
+          } catch (e) { }
+        }
+      } catch (e) {
+        appendLog('❌ Batch Purge failed: ' + e.message);
+      }
     }
 
     async function startTrackerExport() {
-      const checkboxes = [...document.querySelectorAll('.tracker-patient-select')];
-      const selectedIds = checkboxes.filter(c => c.checked).map(c => c.value);
-      if (!selectedIds.length) { alert('Select at least one patient.'); return; }
-      closeTrackerModal();
+      const activeTab = document.querySelector('#ops-pane-export .tab-active').id;
+      let patientIds = [];
 
+      if (activeTab === 'tracker-tab-individual') {
+        const checkboxes = [...document.querySelectorAll('.tracker-patient-select')];
+        patientIds = checkboxes.filter(c => c.checked).map(c => c.value);
+        if (!patientIds.length) { alert('Select at least one patient.'); return; }
+      } else {
+        if (!trackerRanges || trackerRanges.length === 0) {
+          alert('Range list is empty. Please add at least one valid range.');
+          return;
+        }
+        trackerRanges.forEach(range => {
+          for (let i = range.from; i <= range.to; i++) {
+            if (allPatientIds.includes(i.toString())) {
+              patientIds.push(i.toString());
+            }
+          }
+        });
+        if (!patientIds.length) {
+          alert('No valid patient IDs found within the specified range(s) (e.g. valid IDs: ' + allPatientIds.slice(0, 5).join(', ') + '...).');
+          return;
+        }
+      }
+
+      closeOpsModal();
       clearLogs();
       appendLog('📤 Spawning Patient Tracker Export job...');
-      appendLog(`📋 Selected Patients: ${selectedIds.join(', ')}`);
+      appendLog(`📋 Selected Patients: ${patientIds.join(', ')}`);
 
       try {
         const r = await fetch(`${API}/api/patient_tracker_export`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ patient_ids: selectedIds })
+          body: JSON.stringify({ patient_ids: patientIds })
         });
 
         if (!r.ok) {
@@ -1661,36 +1959,6 @@
         alert('Patient Tracker Export failed: ' + e.message);
       }
     }
-
-    // ── Batch ──────────────────────────────────────────────────────────────
-    function openBatchModal() {
-
-      function openLocalFile(path) {
-        window.open('file://' + path, '_blank');
-      }
-      const modal = document.getElementById('batch-modal'); modal.classList.remove('hidden'); modal.classList.add('flex');
-      const defaults = {
-        persona: document.getElementById('chk-batch-persona').checked,
-        reports: document.getElementById('chk-batch-reports').checked,
-        summary: document.getElementById('chk-batch-summary').checked
-      };
-      document.getElementById('batch-patient-rows').innerHTML = allPatientIds.map(id => `
-        <tr data-patient-id="${id}" class="hover:bg-gray-50">
-          <td class="py-2 pr-2"><input type="checkbox" class="batch-select lg-chk" value="${id}" checked></td>
-          <td class="py-2 pr-4 text-[11px] font-medium">Patient ${id}</td>
-          <td class="py-2 pr-2"><input type="checkbox" class="batch-doc batch-persona lg-chk" ${defaults.persona ? 'checked' : ''}></td>
-          <td class="py-2 pr-2"><input type="checkbox" class="batch-doc batch-reports lg-chk" ${defaults.reports ? 'checked' : ''}></td>
-          <td class="py-2 pr-2"><input type="checkbox" class="batch-doc batch-summary lg-chk" ${defaults.summary ? 'checked' : ''}></td>
-          <td class="py-2">
-            <input type="text" class="batch-feedback w-full text-[11px] border border-gray-200 rounded px-2 py-1"
-                   placeholder="Optional feedback">
-          </td>
-        </tr>`).join('');
-      batchSelectAll = true;
-      document.querySelector('[onclick="toggleSelectAll()"]').textContent = 'Deselect All';
-    }
-
-    function closeBatchModal() { const m = document.getElementById('batch-modal'); m.classList.add('hidden'); m.classList.remove('flex'); }
 
     let patientRanges = [];
 
@@ -1744,8 +2012,14 @@
       document.querySelector('[onclick="toggleSelectAll()"]').textContent = batchSelectAll ? 'Deselect All' : 'Select All';
     }
 
+    function toggleTrackerSelectAll() {
+      trackerSelectAll = !trackerSelectAll;
+      document.querySelectorAll('.tracker-patient-select').forEach(c => c.checked = trackerSelectAll);
+      document.querySelector('[onclick="toggleTrackerSelectAll()"]').textContent = trackerSelectAll ? 'Deselect All' : 'Select All';
+    }
+
     async function startBatch() {
-      const activeTab = document.querySelector('#batch-modal .tab-active').id;
+      const activeTab = document.querySelector('#ops-pane-generate .tab-active').id;
       let patientIds = [];
 
       if (activeTab === 'batch-tab-individual') {
@@ -1754,6 +2028,10 @@
         if (!selectedRows.length) { alert('Select at least one patient.'); return; }
         patientIds = selectedRows.map(r => r.getAttribute('data-patient-id'));
       } else {
+        if (!patientRanges || patientRanges.length === 0) {
+          alert('Range list is empty. Please add at least one valid range.');
+          return;
+        }
         patientRanges.forEach(range => {
           for (let i = range.from; i <= range.to; i++) {
             if (allPatientIds.includes(i.toString())) {
@@ -1761,13 +2039,15 @@
             }
           }
         });
-        if (!patientIds.length) { alert('No valid patients found in the selected ranges.'); return; }
+        if (!patientIds.length) {
+          alert('No valid patient IDs found within the specified range(s) (e.g. valid IDs: ' + allPatientIds.slice(0, 5).join(', ') + '...).');
+          return;
+        }
       }
 
-      closeBatchModal(); clearLogs(); appendLog(`🚀 Batch: ${patientIds.length} patients…`);
+      closeOpsModal(); clearLogs(); appendLog(`🚀 Batch: ${patientIds.length} patients…`);
       document.getElementById('log-dot').style.background = '#3b82f6';
 
-      // Set Cancel state on main button
       const btn = document.getElementById('btn-generate');
       btn.onclick = cancelJob;
       btn.classList.replace('bg-gray-900', 'bg-red-600');
