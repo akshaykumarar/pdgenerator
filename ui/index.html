@@ -1545,6 +1545,7 @@
     let activeOpsTab = 'generate';
     let purgeRanges = [];
     let purgeSelectAll = true;
+    let trackerRanges = [];
 
     function openOpsModal(tab = 'generate') {
       const modal = document.getElementById('ops-modal');
@@ -1555,6 +1556,24 @@
       populateBatchPatients();
       populateTrackerPatients();
       populatePurgePatients(tab === 'purge'); // if opened from sidebar purge button, we pre-select the active patient
+
+      // Reset all ranges
+      patientRanges = [];
+      renderRanges();
+      trackerRanges = [];
+      renderTrackerRanges();
+      purgeRanges = [];
+      renderPurgeRanges();
+
+      // Reset tab views to Range selections as default
+      switchBatchTab('range');
+      switchTrackerTab('range');
+      if (tab === 'purge' && currentPatientId) {
+        // If opened for a specific active patient, default to individual tab to show that patient is checked
+        switchPurgeTab('individual');
+      } else {
+        switchPurgeTab('range');
+      }
 
       switchOpsTab(tab);
     }
@@ -1654,6 +1673,49 @@
       document.querySelector('[onclick="togglePurgeSelectAll()"]').textContent = purgeSelectAll ? 'Deselect All' : 'Select All';
     }
 
+    function switchTrackerTab(tab) {
+      if (tab === 'individual') {
+        document.getElementById('tracker-tab-individual').classList.add('tab-active');
+        document.getElementById('tracker-tab-individual').classList.remove('tab-inactive');
+        document.getElementById('tracker-tab-range').classList.add('tab-inactive');
+        document.getElementById('tracker-tab-range').classList.remove('tab-active');
+        document.getElementById('tracker-tab-content-individual').classList.remove('hidden');
+        document.getElementById('tracker-tab-content-range').classList.add('hidden');
+      } else {
+        document.getElementById('tracker-tab-individual').classList.add('tab-inactive');
+        document.getElementById('tracker-tab-individual').classList.remove('tab-active');
+        document.getElementById('tracker-tab-range').classList.add('tab-active');
+        document.getElementById('tracker-tab-range').classList.remove('tab-inactive');
+        document.getElementById('tracker-tab-content-individual').classList.add('hidden');
+        document.getElementById('tracker-tab-content-range').classList.remove('hidden');
+      }
+    }
+
+    function addTrackerRange() {
+      const from = document.getElementById('tracker-range-from').value;
+      const to = document.getElementById('tracker-range-to').value;
+      if (from && to && !isNaN(from) && !isNaN(to)) {
+        trackerRanges.push({ from: parseInt(from), to: parseInt(to) });
+        renderTrackerRanges();
+        document.getElementById('tracker-range-from').value = '';
+        document.getElementById('tracker-range-to').value = '';
+      }
+    }
+
+    function removeTrackerRange(index) {
+      trackerRanges.splice(index, 1);
+      renderTrackerRanges();
+    }
+
+    function renderTrackerRanges() {
+      const list = document.getElementById('tracker-range-list');
+      list.innerHTML = trackerRanges.map((range, index) => `
+        <div class="flex items-center justify-between bg-gray-100 p-2 rounded text-xs">
+          <span>Range: ${range.from} - ${range.to}</span>
+          <button onclick="removeTrackerRange(${index})" class="text-red-500 hover:text-red-700">Remove</button>
+        </div>`).join('');
+    }
+
     function switchPurgeTab(tab) {
       if (tab === 'individual') {
         document.getElementById('purge-tab-individual').classList.add('tab-active');
@@ -1706,6 +1768,10 @@
         patientIds = checkboxes.filter(c => c.checked).map(c => c.value);
         if (!patientIds.length) { alert('Select at least one patient.'); return; }
       } else {
+        if (!purgeRanges || purgeRanges.length === 0) {
+          alert('Range list is empty. Please add at least one valid range.');
+          return;
+        }
         purgeRanges.forEach(range => {
           for (let i = range.from; i <= range.to; i++) {
             if (allPatientIds.includes(i.toString())) {
@@ -1713,7 +1779,10 @@
             }
           }
         });
-        if (!patientIds.length) { alert('No valid patients found in the selected ranges.'); return; }
+        if (!patientIds.length) {
+          alert('No valid patient IDs found within the specified range(s) (e.g. valid IDs: ' + allPatientIds.slice(0, 5).join(', ') + '...).');
+          return;
+        }
       }
 
       const targets = [];
@@ -1764,20 +1833,41 @@
     }
 
     async function startTrackerExport() {
-      const checkboxes = [...document.querySelectorAll('.tracker-patient-select')];
-      const selectedIds = checkboxes.filter(c => c.checked).map(c => c.value);
-      if (!selectedIds.length) { alert('Select at least one patient.'); return; }
-      closeOpsModal();
+      const activeTab = document.querySelector('#ops-pane-export .tab-active').id;
+      let patientIds = [];
 
+      if (activeTab === 'tracker-tab-individual') {
+        const checkboxes = [...document.querySelectorAll('.tracker-patient-select')];
+        patientIds = checkboxes.filter(c => c.checked).map(c => c.value);
+        if (!patientIds.length) { alert('Select at least one patient.'); return; }
+      } else {
+        if (!trackerRanges || trackerRanges.length === 0) {
+          alert('Range list is empty. Please add at least one valid range.');
+          return;
+        }
+        trackerRanges.forEach(range => {
+          for (let i = range.from; i <= range.to; i++) {
+            if (allPatientIds.includes(i.toString())) {
+              patientIds.push(i.toString());
+            }
+          }
+        });
+        if (!patientIds.length) {
+          alert('No valid patient IDs found within the specified range(s) (e.g. valid IDs: ' + allPatientIds.slice(0, 5).join(', ') + '...).');
+          return;
+        }
+      }
+
+      closeOpsModal();
       clearLogs();
       appendLog('📤 Spawning Patient Tracker Export job...');
-      appendLog(`📋 Selected Patients: ${selectedIds.join(', ')}`);
+      appendLog(`📋 Selected Patients: ${patientIds.join(', ')}`);
 
       try {
         const r = await fetch(`${API}/api/patient_tracker_export`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ patient_ids: selectedIds })
+          body: JSON.stringify({ patient_ids: patientIds })
         });
 
         if (!r.ok) {
@@ -1870,6 +1960,10 @@
         if (!selectedRows.length) { alert('Select at least one patient.'); return; }
         patientIds = selectedRows.map(r => r.getAttribute('data-patient-id'));
       } else {
+        if (!patientRanges || patientRanges.length === 0) {
+          alert('Range list is empty. Please add at least one valid range.');
+          return;
+        }
         patientRanges.forEach(range => {
           for (let i = range.from; i <= range.to; i++) {
             if (allPatientIds.includes(i.toString())) {
@@ -1877,7 +1971,10 @@
             }
           }
         });
-        if (!patientIds.length) { alert('No valid patients found in the selected ranges.'); return; }
+        if (!patientIds.length) {
+          alert('No valid patient IDs found within the specified range(s) (e.g. valid IDs: ' + allPatientIds.slice(0, 5).join(', ') + '...).');
+          return;
+        }
       }
 
       closeOpsModal(); clearLogs(); appendLog(`🚀 Batch: ${patientIds.length} patients…`);
