@@ -1,0 +1,97 @@
+{
+  "by_code": {
+    "78452": {
+      "procedure": "Myocardial Perfusion Imaging (SPECT)",
+      "department": "Cardiology",
+      "test_case": "Patient 1"
+    },
+    "75574": {
+      "procedure": "Cardiac CT Angiography (CTA)",
+      "department": "Cardiology",
+      "test_case": "Patient 2"
+    },
+    "33249": {
+      "procedure": "Implantation of ICD",
+      "department": "Cardiology",
+      "test_case": "Patient 3"
+    },
+    "92928": {
+      "procedure": "Percutaneous Coronary Intervention (PCI)",
+      "department": "Cardiology",
+      "test_case": "Patient 4"
+    },
+    "93306": {
+      "procedure": "Echocardiography + Doppler and color flow",
+      "department": "Cardiology",
+      "test_case": "Patient 5"
+    },
+    "90999": {
+      "procedure": "Dialysis",
+      "department": "Nephrology",
+      "test_case": "Patient 1"
+    },
+    "36558": {
+      "procedure": "Insertion of tunneled central venous catheter for dialysis",
+      "department": "Nephrology",
+      "test_case": "Patient 2"
+    },
+    "50360": {
+      "procedure": "Renal transplant, with recipient nephrectomy",
+      "department": "Nephrology",
+      "test_case": "Patient 3"
+    },
+    "50394": {
+      "procedure": "Injection procedure for nephrostogram and/or ureterogram",
+      "department": "Nephrology",
+      "test_case": "Patient 4"
+    },
+    "77012": {
+      "procedure": "CT guidance for needle placement",
+      "department": "Nephrology",
+      "test_case": "Patient 5"
+    },
+    "21141": {
+      "procedure": "Le Fort/Osteotomy",
+      "department": "Oral and Maxillofacial Surgery",
+      "test_case": "Patient 1"
+    },
+    "21196": {
+      "procedure": "Bilateral Sagittal Split Osteotomy (BSSO)",
+      "department": "Oral and Maxillofacial Surgery",
+      "test_case": "Patient 2"
+    },
+    "21210": {
+      "procedure": "Bone graft (maxilla)",
+      "department": "Oral and Maxillofacial Surgery",
+      "test_case": "Patient 3"
+    },
+    "21085": {
+      "procedure": "Impression and custom oral prosthesis for reconstruction",
+      "department": "Oral and Maxillofacial Surgery",
+      "test_case": "Patient 4"
+    },
+    "21235": {
+      "procedure": "Bone harvest for facial reconstruction",
+      "department": "Oral and Maxillofacial Surgery",
+      "test_case": "Patient 5"
+    }
+  },
+  "by_procedure": {
+    "myocardial perfusion imaging (spect)": "78452",
+    "cardiac ct angiography (cta)": "75574",
+    "implantation of icd": "33249",
+    "percutaneous coronary intervention (pci)": "92928",
+    "echocardiography + doppler and color flow": "93306",
+    "dialysis": "90999",
+    "insertion of tunneled central venous catheter for dialysis": "36558",
+    "renal transplant, with recipient nephrectomy": "50360",
+    "injection procedure for nephrostogram and/or ureterogram": "50394",
+    "ct guidance for needle placement": "77012",
+    "le fort/osteotomy": "21141",
+    "bilateral sagittal split osteotomy (bsso)": "21196",
+    "bone graft (maxilla)": "21210",
+    "impression and custom oral prosthesis for reconstruction": "21085",
+    "bone harvest for facial reconstruction": "21235"
+  },
+  "updated_at": "2026-07-21T12:54:38.058459"
+}

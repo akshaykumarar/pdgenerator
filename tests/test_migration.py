@@ -20,9 +20,8 @@ def test_migration_and_reverse_migration(monkeypatch):
     if not os.getenv("DB_HOST"):
         pytest.skip("PostgreSQL credentials are not configured in environment variables.")
 
-    # 3. Setup temporary file for test JSON DB
-    fd, temp_json_path = tempfile.mkstemp(suffix=".json")
-    os.close(fd)
+    # 3. Setup temporary directory for test JSON DB
+    temp_json_path = tempfile.mkdtemp()
 
     # Mock LEGACY_DB_PATH to prevent legacy database migration during testing
     nonexistent_path = os.path.join(temp_json_path, "nonexistent")
@@ -105,7 +104,8 @@ def test_migration_and_reverse_migration(monkeypatch):
         # Clean up JSON database test file
         if os.path.exists(temp_json_path):
             try:
-                os.remove(temp_json_path)
+                import shutil
+                shutil.rmtree(temp_json_path)
             except Exception:
                 pass
 

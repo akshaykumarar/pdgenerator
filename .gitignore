@@ -19,10 +19,9 @@ test_generated_output/
 *patients_db.json
 **/patients_db.json
 *.log
-api.log
+src/core/patients_db/
 
 # Secrets & Configs
-core/*.json
 core/UAT Plan.xlsx
 .continue/
 .search_cache/

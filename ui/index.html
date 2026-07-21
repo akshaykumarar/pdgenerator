@@ -359,13 +359,19 @@
           </select>
         </div>
 
+        <div class="border border-gray-200 px-3 py-1.5 rounded bg-gray-50 text-[10px]">
+            <label class="flex items-center gap-1.5 text-gray-500 cursor-pointer select-none">
+                <input type="checkbox" id="chk-pa-optimize" class="w-2.5 h-2.5 rounded lg-chk"> PA Optimize (Realistic Data)
+            </label>
+        </div>
+
         <button id="btn-generate" onclick="onGenerateClick()"
           class="w-full py-2.5 bg-gray-900 text-white text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-gray-700 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed rounded">
           <span id="gen-icon" class="material-symbols-outlined text-sm"
             style="font-variation-settings:'FILL' 1;">play_arrow</span>
           <span id="gen-label">Generate</span>
         </button>
-        <div class="text-center mt-2 flex items-center justify-center">
+        <div class="text-center mt-2 flex items-center justify-center hidden">
           <label
             class="flex items-center gap-1.5 text-[10px] text-gray-500 cursor-pointer select-none border border-gray-200 px-3 py-1 rounded bg-gray-50">
             <input type="checkbox" id="chk-preview-flow" class="w-2.5 h-2.5 rounded lg-chk"> Preview before generating
@@ -678,6 +684,13 @@
         document.getElementById(`chk-batch-${type}`)?.addEventListener('change', (e) => {
           document.querySelectorAll(`.batch-${type}`).forEach(chk => chk.checked = e.target.checked);
         });
+      });
+
+      document.getElementById("chk-pa-optimize")?.addEventListener("change", (e) => {
+        if (e.target.checked) {
+          const denialGapsChk = document.getElementById("chk-denial-gaps");
+          if (denialGapsChk) denialGapsChk.checked = false;
+        }
       });
     });
 
@@ -1115,6 +1128,7 @@
         const body = {
           patient_id: currentPatientId, feedback: document.getElementById('feedback-input').value,
           generation_mode: { persona: document.getElementById('chk-persona').checked, reports: document.getElementById('chk-reports').checked, summary: document.getElementById('chk-summary').checked },
+          pa_optimize: document.getElementById('chk-pa-optimize')?.checked || false,
           scan_mode: scanMode
         };
         const r = await fetch(`${API}/api/generate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -1588,6 +1602,7 @@
         patients,
         feedback: defaultFeedback,
         generation_mode: defaultMode,
+        pa_optimize: document.getElementById('chk-pa-optimize')?.checked || false,
         scan_mode: scanMode
       };
       try {

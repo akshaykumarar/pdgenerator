@@ -19,9 +19,8 @@ def test_repository_interfaces():
 
 
 def test_json_repository_operations(monkeypatch):
-    # Setup temporary file for test DB
-    fd, temp_path = tempfile.mkstemp(suffix=".json")
-    os.close(fd)
+    # Setup temporary directory for test DB
+    temp_path = tempfile.mkdtemp()
 
     # Mock LEGACY_DB_PATH to prevent automatic legacy database migration during testing
     monkeypatch.setattr("src.core.json_repository.LEGACY_DB_PATH", os.path.join(temp_path, "nonexistent"))
@@ -31,8 +30,7 @@ def test_json_repository_operations(monkeypatch):
         # 1. Initialize
         repo._init_db()
         assert os.path.exists(temp_path)
-        with open(temp_path, "r", encoding="utf-8") as f:
-            assert json.load(f) == {}
+        assert os.listdir(temp_path) == []
 
         # 2. Save and Load
         patient_data = {
@@ -106,12 +104,12 @@ def test_json_repository_operations(monkeypatch):
 
         # 8. Reset database
         repo.reset_database()
-        with open(temp_path, "r", encoding="utf-8") as f:
-            assert json.load(f) == {}
+        assert os.listdir(temp_path) == []
 
     finally:
         if os.path.exists(temp_path):
-            os.remove(temp_path)
+            import shutil
+            shutil.rmtree(temp_path)
 
 
 def test_postgres_repository_operations(monkeypatch):

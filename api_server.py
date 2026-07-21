@@ -664,6 +664,71 @@ def api_get_patient(patient_id: str):
     return jsonify({"found": False, "data": None, "case_details": None})
 
 
+@app.route("/api/patient/<patient_id>", methods=["PUT"])
+def api_put_patient(patient_id: str):
+    """
+    Create or update a patient's database record.
+    ---
+    tags:
+      - Patients
+    parameters:
+      - in: path
+        name: patient_id
+        type: string
+        required: true
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          description: Full or partial patient data object.
+    responses:
+      200:
+        description: Patient record saved successfully.
+      400:
+        description: Invalid request body.
+    """
+    if not request.is_json:
+        return jsonify({"error": "Request must be JSON"}), 400
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Request body cannot be empty"}), 400
+
+    try:
+        patient_db.save_patient(patient_id, data)
+        return jsonify({"ok": True, "patient_id": patient_id})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/patient/<patient_id>", methods=["DELETE"])
+def api_delete_patient(patient_id: str):
+    """
+    Delete a patient's database record.
+    ---
+    tags:
+      - Patients
+    parameters:
+      - in: path
+        name: patient_id
+        type: string
+        required: true
+    responses:
+      200:
+        description: Patient record deleted successfully.
+      404:
+        description: Patient not found.
+    """
+    try:
+        deleted = patient_db.delete_patient(patient_id)
+        if deleted:
+            return jsonify({"ok": True, "patient_id": patient_id})
+        else:
+            return jsonify({"error": "Patient not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/insurance/config")
 def api_insurance_config():
     """Return insurance configuration for UI selection."""
