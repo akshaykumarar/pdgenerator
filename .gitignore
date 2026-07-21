@@ -12,16 +12,21 @@ venv/
 # MacOS
 .DS_Store
 
-# Generated Output
+# Generated Output & Patient Data
 generated_output/
+test_generated_output/
+*.pdf
+*patients_db.json
+**/patients_db.json
+*.log
+api.log
 
-# Secrets
+# Secrets & Configs
 core/*.json
-src/core/patients_db.json
 core/UAT Plan.xlsx
 .continue/
 .search_cache/
 .pytest_cache/
-api.log
 
+# Artifacts
 artifacts/
