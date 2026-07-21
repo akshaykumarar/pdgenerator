@@ -268,7 +268,9 @@ The persistence layer uses a storage repository abstraction (`PatientRepository`
 
 The active engine is chosen via the `PATIENT_STORAGE_BACKEND` environment variable:
 * `json`: (Default) Saves data top-level to `src/core/patients_db.json` (gitignored). Legacy `core/patients_db.json` is auto-migrated on first load.
-* `postgres`: Routes requests to PostgreSQL (stubbed pending schema approval).
+* `postgres`: Routes requests to PostgreSQL (fully implemented, index-optimized, and tested).
+  - **DDL Schema**: Defined in `src/core/schema.sql`. Creates the `patients` table, constraints, B-tree indexes on names and dates of birth, and a GIN index on `persona_data` (JSONB).
+  - **Migration Utilities**: `migrate_json_to_postgres.py` and `migrate_postgres_to_json.py` transfer data between backends and support `skip`/`update`/`fail` conflict resolution strategies.
 
 Module-level wrappers in `src/core/patient_db.py` act as a factory and delegate all load/save/delete/reset/compaction operations to the active repository instance. All script data operations (e.g. log compaction in `compact_patient_data.py`, selectively purging in `purge_manager.py`) utilize these abstractions rather than touching file pathways directly.
 

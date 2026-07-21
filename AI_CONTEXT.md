@@ -597,6 +597,18 @@ API server runs on `http://localhost:410` by default (`API_PORT` env var).
 
 ---
 
+# Database Persistence & Migrations
+
+The patient storage persistence layer uses a repository pattern decoupled from business logic:
+- Toggle between backends using `PATIENT_STORAGE_BACKEND` env var: `'json'` (local file) or `'postgres'` (PostgreSQL database).
+- **PostgreSQL Schema**: Defined in `src/core/schema.sql`. Schema is initialized automatically via the repository. Uses indices on `last_name, first_name` and `dob` for deduplication/listing, and a GIN index on `persona_data` (JSONB) for robust querying.
+- **Migration Scripts**:
+  - `migrate_json_to_postgres.py` transfers JSON patient records to PostgreSQL.
+  - `migrate_postgres_to_json.py` reverse migrates PostgreSQL records to JSON.
+  - Both CLI scripts accept `--strategy` option (`skip`, `update`, `fail`) to resolve duplicate ID conflicts.
+
+---
+
 # Key Rules for AI Agents
 
 1. Dates must use `MM-DD-YYYY`

@@ -5,11 +5,21 @@ from .repository import PatientRepository
 class PostgresPatientRepository(PatientRepository):
     """PostgreSQL repository implementation using psycopg2."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initializes the PostgreSQL repository, caching database schema configuration."""
         # Cache schema name, defaults to 'pdgenerator'
         self.schema = os.getenv("DB_SCHEMA", "pdgenerator").strip()
 
-    def _connect(self):
+    def _connect(self) -> Any:
+        """
+        Establishes and returns a connection to the PostgreSQL database.
+        
+        Returns:
+            psycopg2.extensions.connection: The database connection object.
+            
+        Raises:
+            RuntimeError: If connection to PostgreSQL database fails.
+        """
         import psycopg2
         host = os.getenv("DB_HOST", "localhost")
         port = os.getenv("DB_PORT", "5432")

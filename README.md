@@ -75,6 +75,29 @@ Defaults:
 - Keeps the last 5 history entries in `archive/log/<id>.txt`
 - Trims feedback blocks in `<id>-record.txt`
 
+#### Database Migration CLI
+
+To migrate records between the Local JSON database and PostgreSQL storage, run:
+
+```bash
+# Migrate JSON -> PostgreSQL (overwriting duplicates by default)
+python migrate_json_to_postgres.py --strategy update
+
+# Reverse migrate PostgreSQL -> JSON (skipping duplicates)
+python migrate_postgres_to_json.py --strategy skip
+
+# Migrate JSON -> PostgreSQL and abort if any duplicate ID is found
+python migrate_json_to_postgres.py --strategy fail
+
+# Specify custom JSON database path
+python migrate_json_to_postgres.py --json-path /path/to/custom_patients_db.json --strategy update
+```
+
+Options for `--strategy`:
+- `update`: Overwrites the destination record with source data on duplicate ID.
+- `skip`: Skips migration for existing patient IDs.
+- `fail`: Aborts the migration process immediately (fail-fast) if any conflicts exist.
+
 ---
 
 ## 🖥️ Web UI — 3-Silo Layout
@@ -366,7 +389,7 @@ pdgenerator/
 └── requirements.txt
 ```
 
-**Patient DB:** The database layer uses a storage repository abstraction (`PatientRepository`) supporting both local JSON files and PostgreSQL. By default, it uses the local JSON backend (`PATIENT_STORAGE_BACKEND=json`), saving data to `src/core/patients_db.json` (gitignored). If a legacy `core/patients_db.json` (gitignored) exists, it is automatically migrated on first load. Setting `PATIENT_STORAGE_BACKEND=postgres` routes database queries to PostgreSQL (currently configured as a stub pending schema approval). All patient persona database files (`*patients_db.json`), generated PDFs (`*.pdf`), and execution logs (`*.log`) are excluded from Git to protect patient data and prevent repository bloating.
+**Patient DB:** The database layer uses a storage repository abstraction (`PatientRepository`) supporting both local JSON files and PostgreSQL. By default, it uses the local JSON backend (`PATIENT_STORAGE_BACKEND=json`), saving data to `src/core/patients_db.json` (gitignored). If a legacy `core/patients_db.json` (gitignored) exists, it is automatically migrated on first load. Setting `PATIENT_STORAGE_BACKEND=postgres` routes database queries to PostgreSQL (fully implemented, index-optimized, and tested). All patient persona database files (`*patients_db.json`), generated PDFs (`*.pdf`), and execution logs (`*.log`) are excluded from Git to protect patient data and prevent repository bloating.
 **Feedback history:** Per-patient feedback/history is stored under `generated_output/logs/<ID - Name - CPT - Outcome>...`.
 
 ### Key Files to Customize
