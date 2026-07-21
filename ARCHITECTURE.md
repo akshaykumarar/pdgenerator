@@ -264,9 +264,11 @@ Hardcoded logic is externalized into JSON configs:
 
 ### Patient Database (`src/core/patient_db.py`)
 
-Persistent storage of generated personas in `src/core/patients_db.json` to preserve consistency across runs.
+Persistent storage of generated personas in `src/core/patients_db.json` (gitignored) to preserve consistency across runs.
 
-Legacy `core/patients_db.json` is automatically migrated into `src/core/patients_db.json` on first load.
+Legacy `core/patients_db.json` (gitignored) is automatically migrated into `src/core/patients_db.json` on first load.
+
+Both patient databases, along with the root `patients_db.json`, are excluded from Git to prevent storing patient details or generated test outputs in the code repository.
 
 Use `compact_patient_data.py` to truncate long patient DB fields and trim per-patient history/feedback logs for smaller context sizes.
 

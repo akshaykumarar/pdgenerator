@@ -366,7 +366,7 @@ pdgenerator/
 └── requirements.txt
 ```
 
-**Patient DB:** The active database lives at `src/core/patients_db.json`. If a legacy `core/patients_db.json` exists, it is automatically migrated on first load.
+**Patient DB:** The active database lives at `src/core/patients_db.json` (gitignored). If a legacy `core/patients_db.json` (gitignored) exists, it is automatically migrated on first load. All patient persona database files (`*patients_db.json`), generated PDFs (`*.pdf`), and execution logs (`*.log`) are excluded from Git to protect patient data and prevent repository bloating.
 **Feedback history:** Per-patient feedback/history is stored under `generated_output/logs/<ID - Name - CPT - Outcome>...`.
 
 ### Key Files to Customize
