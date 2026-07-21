@@ -559,12 +559,7 @@ python run.py
 
 # UI
 
-Two interface files in `ui/` — both implement the **3-silo layout**:
-
-| File | Theme | Description |
-|------|-------|-------------|
-| `index.html` | Dark (Material You) | Material dark design |
-| `index2.html` | Light (Command Center) | Clean light design |
+The interface file is in `ui/index.html` (Material You dark theme), which implements the **3-silo layout**:
 
 **3-Silo Layout:**
 

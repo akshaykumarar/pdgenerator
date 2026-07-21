@@ -1,485 +1,240 @@
-# Clinical Data Generator (v6.0)
+# Clinical Data Generator (v8.1)
 
 > **Automated Synthetic Healthcare Data Pipeline**
 > Generates high-fidelity clinical PDFs and FHIR-compliant personas for testing Prior Authorization workflows.
 
 ---
 
-## 🚀 Quick Start
+## 🌟 Core Features
 
-### 🏁 Platform-Independent Launch
+### 1. Patient Persona Synthesis (FHIR-compliant)
+- **Texas-Constrained Demographics**: Restricts all patient names, dates of birth, emergency contacts, hospital facilities, and ZIP codes to realistic values within Texas, USA.
+- **Biometric Profiles**: Synthesizes complete patient demographics, physical attributes (height, weight, race, gender), and primary provider details.
+- **Structured Clinical State**: Maintains persistent records for medications, allergies, vaccination records, encounters, and diagnoses.
 
-To simplify setup, we provide launch scripts for both Windows and macOS/Linux.
+### 2. Clinical Report Synthesis
+- **Template-Driven ReportLab PDF Renderer**: Programmatically converts structured case data into medical-grade clinical reports (Consultation Notes, imaging reports, lab results).
+- **Medical Content Intensity**: Restricts generation to high-value medical justifications (detailed multi-sentence findings, objective measurements, clinical reasoning), preventing sparse summaries.
+- **Coherence Enforcement**: Evaluates cross-document reference consistency. Dates, provider NPIs, and clinical details match the primary persona across all outputs.
 
-#### 1. Start the API Server (Web UI)
+### 3. Prior Authorization (PA) & Gap Injection
+- **PA Optimization Toggle**: Automatically adjusts clinical details to strengthen the medical justification, raising the approval probability score.
+- **Probabilistic Gap Injection System**: When case outcome is set to Denial/Rejection, the system applies a gap injection protocol. It samples 2–4 gap archetypes across 5 clinical dimensions (Profile-Behavior, Temporal-Sequence, Treatment-Escalation, Cross-Document, Policy-Criteria) to construct realistic, hard-to-detect inconsistencies without leaving blank fields.
+- **Medications as First-Class Targets**: Automatically intercepts J/Q-prefixed HCPC medication drug codes (e.g. `J0897`, `Q5124`) and routes them to specialized medication prompt structures (step-therapies, failed trials, and lab markers).
+- **Supporting Documents Cap**: Intelligently caps supporting documents (e.g., radiology/specialist consults) to a maximum of 5, preserving core documents (PA Requests and Summaries).
 
-The Web UI is the recommended way to use the generator.
+### 4. Patient Tracker CSV Exporter
+- **Excel-Safe Exporter**: Compiles Prior Authorization metrics for selected patients into a unified 12-column spreadsheet report (`patient_tracker_export.csv`).
+- **Formula Injection Protection**: Automatically sanitizes potential formula injection attempts by prepending a single quote (`'`) to values starting with `=`, `+`, `-`, or `@`.
+- **Sanitized Multiline Layouts**: Removes all HTML markup tags from cell contents, replacing them with Excel-friendly newlines (`\n`) and plain bullets (`- `).
 
-- **Windows**: Run `run_api.bat`
-- **macOS / Linux**: Run `chmod +x run_api.sh && ./run_api.sh`
+### 5. Visual Scan Simulation Filter
+- **Rasterized Image Filter**: Flat-renders vector PDFs to flat, image-only documents using `PyMuPDF` (`fitz`), Pillow, and NumPy, making them look physically scanned.
+- **Adjustable Degradation Artifacts**: Features Light, Medium, and Heavy presets simulating feeding skews, sensor noise, light gradient shadows, lens blur, dust speckles, and aged paper tints.
 
-> **Note**: The default port is `410` (to avoid macOS port 5000 conflicts). Open either UI in your browser:
->
-> - **Dark UI**: `ui/index.html` (Material You dark theme)
-> - **Light UI**: `ui/index2.html` (Command Center light theme)
+### 6. Concise Clinical Summary
+- Generates a 5-part summary for case evaluators:
+  1. **Test Case and Overview** — Basic profile and case description.
+  2. **Details from Extraction** — Insurance payer metadata and CPT/ICD code expectations.
+  3. **Likelihood without Supporting Documents** — Baseline outcome probability.
+  4. **Likelihood PA Score Change** — Impact assessment of each supporting report.
+  5. **Overall Summary & Pointers** — Manual verification checklist.
 
-#### 2. Start the CLI (Terminal Mode)
-
-- **Windows**: Run `run.bat`
-- **macOS / Linux**: Run `chmod +x run.sh && ./run.sh`
-- **Direct** (any OS): `python run.py`
+### 7. Multi-User Concurrency
+- **Thread-Safe Logging Proxy**: Uses `ThreadSafeStdout` to capture standard print statements and route them to matching `job_id` log buffers for concurrent browser sessions.
+- **Patient-Level Isolation**: Restricts concurrent jobs for the same `patient_id` using a registry, preventing race conditions while allowing different patients to compile in parallel.
 
 ---
 
-### 📦 Manual Setup (If scripts fail)
+## 🏗️ System Architecture & Technology Stack
 
-1. **Environment**: Python 3.10+
-2. **Virtual Env**: `python -m venv venv`
-3. **Dependencies**: `pip install -r requirements.txt`
-4. **Credentials**: Copy `cred/.env.example` to `cred/.env` and add your API keys.
+### Core Principle: Single Source of Truth
+All documents derive from `patient_state`, a canonical patient data model loaded from UAT Excel definitions, state managers, and database layers. This prevents timeline drift and inconsistent demographics.
 
-#### Interactive Commands
+### Technology Stack
+- **Backend Orchestrator**: Python 3.10+
+- **Web App API Layer**: Flask REST API (integrated with Swagger OpenAPI documentation)
+- **PDF Layout Engines**: ReportLab PDF library
+- **PDF Post-Processing**: PyMuPDF (`fitz`), Pillow, and NumPy (Visual Scan filter)
+- **Medical Code Search**: Tavily Search Engine API (retrieves CPT/ICD code descriptions)
+- **LLM Pipeline Clients**: OpenAI (`gpt-4o`, `gpt-4o-mini`) & Vertex AI (`gemini-2Pro`, `gemini-2Flash`)
 
-| Command | Description | Example |
-| :--- | :--- | :--- |
-| **`[Patient ID]`** | Generates data for a single patient. | `210` or `237` |
-| **`[ID]-[feedback]`** | Generates data with AI feedback. | `225-use kidney transplant` |
-| **`[ID],[ID],[ID]`** | Batch mode for specific IDs. | `221,222,223` |
-| **`*`** | Runs Batch Mode for all missing patients. | `*` |
-| **`q`** / **`exit`** | Quits the application. | `q` |
+### Decoupled Storage Layer
+Supports two repository backends toggled via `PATIENT_STORAGE_BACKEND`:
+1. **JSON Backend**: (Default) Saves data to `src/core/patients_db.json`.
+2. **PostgreSQL Backend**: Optimizes reads/writes using B-tree indices on patient names/dates of birth and a GIN index on `persona_data` (JSONB). Initialized via schema DDL at `src/core/schema.sql`.
+
+### Directory Structure
+```text
+pdgenerator/
+├── cred/                       # Credentials & environment configuration (.env)
+├── core/                       # Reference case data (Excel plan, code maps)
+├── config/                     # Externalized rules & pattern configurations
+├── templates/                  # PDF layouts and planner rule schemas
+├── generated_output/           # Generated files (gitignored)
+│   ├── patient-data/           # Per-patient documents and folders
+│   ├── archive/                # Archived/past generated versions
+│   ├── logs/                   # Log streams and history logs
+│   ├── metadata/               # Patient text records (-record.txt)
+│   ├── summary/                # Dedicated clinical summary PDFs
+│   └── debug/                  # Debug patient_state JSON logs
+├── ui/
+│   └── index.html              # Interactive dark web interface (Material You)
+├── src/
+│   ├── ai/                     # LLM client, prompts, models, and Tavily search
+│   ├── core/                   # Patient DB, state, and config setup
+│   ├── data/                   # Excel loaders, history tracking, records
+│   ├── doc_generation/         # PDF planner, validator, and tracker exporters
+│   ├── utils/                  # Date parsing, versioning, and purge managers
+│   ├── cli.py                  # Terminal interactive entrypoint
+│   └── workflow.py             # Core pipeline orchestrator
+├── api_server.py               # Flask REST API (port 410)
+├── run.py                      # Interactive CLI launcher
+├── compact_patient_data.py     # Log and history compaction CLI
+└── remove_persona.py           # Deep persona removal utility
+```
+
+### Core File Reference
+- `src/workflow.py` — Orchestrates data load, LLM calls, document validation, and PDF output.
+- `src/utils/purge_manager.py` — Cleans up folders, records, and database rows.
+- `src/doc_generation/patient_tracker_export.py` — Formats and writes the CSV export.
+- `src/ai/client.py` — Handles API interfaces with OpenAI and Vertex AI.
+- `src/ai/prompts.py` — Central prompt definitions and gap archetype pools.
+
+---
+
+## ⚙️ Setup & Execution
+
+### 1. Prerequisites
+- Python 3.10+
+- OpenAI API Key **or** Google Cloud Vertex AI credentials
+
+### 2. Platform-Independent Launch
+Launch scripts are provided for automatic installation and bootstrapping:
+- **Web UI Mode**:
+  - **Windows**: Run `run_api.bat`
+  - **macOS / Linux**: Run `chmod +x run_api.sh && ./run_api.sh`
+- **CLI Mode**:
+  - **Windows**: Run `run.bat`
+  - **macOS / Linux**: Run `chmod +x run.sh && ./run.sh`
+  - **Direct (Any OS)**: `python run.py`
+
+### 3. Manual Installation (If scripts fail)
+```bash
+# Clone the repository
+cd pdgenerator
+
+# Initialize virtual environment
+python3 -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 4. Configuration Setup (`cred/.env`)
+Copy the template configuration file:
+```bash
+# Mac/Linux
+cp cred/.env.example cred/.env
+
+# Windows
+copy cred\.env.example cred\.env
+```
+Fill in the credentials in `cred/.env`:
+```ini
+LLM_PROVIDER=openai # openai or vertexai
+OPENAI_API_KEY=your_openai_api_key_here
+
+# For Vertex AI:
+GCP_PROJECT_ID=your_gcp_project_id_here
+GOOGLE_APPLICATION_CREDENTIALS=./cred/gcp_auth_key.json
+
+OUTPUT_DIR=./generated_output
+API_PORT=410
+ENABLE_WEB_SEARCH=true
+TAVILY_API_KEY=your_tavily_api_key_here
+
+# Database backend selection:
+PATIENT_STORAGE_BACKEND=json # json or postgres
+DB_SCHEMA=pdgenerator
+```
+
+### 5. Interactive CLI Launcher
+Run `python run.py` to open the terminal-based interactive CLI:
+- **`[Patient ID]`**: Runs generation for a single patient (e.g. `210`).
+- **`[ID]-[feedback]`**: Runs generation with specific guidance (e.g. `225-use kidney transplant`).
+- **`[ID],[ID],[ID]`**: Batch mode for specific IDs (e.g. `221,222,223`).
+- **`*`**: Compiles missing patients from the Excel plan.
+- **`q`** / **`exit`**: Exits CLI.
+
+### 6. Standalone CLI Utilities
 
 #### Persona Removal CLI
-
-To completely wipe out all generated history, data, and database entries for a specific Persona, you can run the standalone remove utility:
-
+To completely wipe out all generated history, document folders, and database entries for a specific patient:
 ```bash
 python remove_persona.py <Patient_ID>
-# Or to skip confirmation:
+# Bypass manual confirmation:
 python remove_persona.py -f <Patient_ID>
 ```
 
 #### Patient Data Compaction CLI
-
-To reduce token-heavy history/context/feedback and shrink patient DB text fields, run:
-
+To reduce token history, feedback, and database size for patient runs:
 ```bash
+# Compact a single patient
 python compact_patient_data.py --patient-id 225
-# Compact all patients and keep only the last 3 history entries:
-python compact_patient_data.py --all --history-entries 3
-# Dry run (no files written):
-python compact_patient_data.py --patient-id 225 --dry-run
-```
 
-Defaults:
-- Truncates long text fields in `patients_db.json` (including `bio_narrative`)
-- Keeps the last 5 history entries in `archive/log/<id>.txt`
-- Trims feedback blocks in `<id>-record.txt`
+# Compact all patients and keep only the last 3 history entries
+python compact_patient_data.py --all --history-entries 3
+```
 
 #### Database Migration CLI
-
-To migrate records between the Local JSON database and PostgreSQL storage, run:
-
+To transfer records between JSON and PostgreSQL storage backends:
 ```bash
-# Migrate JSON -> PostgreSQL (overwriting duplicates by default)
+# Migrate JSON database to PostgreSQL database
 python migrate_json_to_postgres.py --strategy update
 
-# Reverse migrate PostgreSQL -> JSON (skipping duplicates)
+# Reverse migrate PostgreSQL database to JSON file
 python migrate_postgres_to_json.py --strategy skip
-
-# Migrate JSON -> PostgreSQL and abort if any duplicate ID is found
-python migrate_json_to_postgres.py --strategy fail
-
-# Specify custom JSON database path
-python migrate_json_to_postgres.py --json-path /path/to/custom_patients_db.json --strategy update
 ```
-
-Options for `--strategy`:
-- `update`: Overwrites the destination record with source data on duplicate ID.
-- `skip`: Skips migration for existing patient IDs.
-- `fail`: Aborts the migration process immediately (fail-fast) if any conflicts exist.
+*Strategies supported: `update` (overwrite), `skip` (do not replace), `fail` (abort on duplicate).*
 
 ---
 
-## 🖥️ Web UI — 3-Silo Layout
+## 🚀 Web UI & API Reference
 
-Two interface files in `ui/` share the same **3-silo layout**:
+Access the interface in your browser by opening `ui/index.html` (runs locally, connects to the local API server).
 
-| File | Theme |
-|------|-------|
-| `index.html` | Dark (Material You) |
-| `index2.html` | Light (Command Center) |
-
-### Silo 1 — Patient & Case Info (Left)
-
-- Patient selector dropdown (all IDs from Excel plan)
-- Identity summary: DOB, Gender, Provider
-- UAT case details: Test Case #, Department, Procedure / CPT code
-- Expected outcome with **approval** (green) / **denial** (red) color coding
-- Primary diagnosis
-
-### Silo 2 — Clinical Detail Tabs (Center)
-
-7 inline tabs (no modal required):
-
-- **Medications** — brand, generic, dosage, status, prescriber
-- **Allergies** — allergen, reaction, severity with warnings
-- **Therapy** — CPT code, provider, frequency, status
-- **Procedures** — procedure, date, provider, facility
-- **Encounters** — type, date, provider, chief complaint
-- **Imaging** — type, date, facility, findings
-- **Labs** — type, date, results
-
-### Silo 3 — Generate & Documents (Right)
-
-- **Feedback textarea** — optional AI instructions
-- **Doc type checkboxes** — Persona / Reports / Summary
-- **Scanned/Non-AI Look toggle** — new toggle to post-process PDFs with scan artifacts (skews, noise, shadows, paper tints) at Light, Medium, or Heavy intensity.
-- **Generate button** → `POST /api/generate` → live log polling
-- **Live log panel** — streams real-time generation output (thread-safe for parallel runs)
-- **Document list** — PDF links with versioning (e.g. `v3.0`, `v3.1`)
-- **Batch Modal** — header button opens patient checklist → `POST /api/generate_all`
-- **Patient Tracker Export** — header button next to Batch Run opens patient checklist modal to compile landscape PDF table and companion TSV inside `generated_output/patient-data/`
-
-
-### Concurrency & Parallelism
-
-- **Multi-Tab Support**: The system supports multiple concurrent generation jobs from different browser tabs/users.
-- **Thread-Safe Logging**: Uses a global `ThreadSafeStdout` proxy to route `print()` output to the correct `job_id` log stream based on the executing thread.
-- **Patient-Level Locking**: Parallel runs are allowed for **different patients**. Concurrent requests for the **same patient** are blocked with an `HTTP 409 Conflict` error to prevent document race conditions.
-
-### Clinical Data Input Tabs
-
-Enter structured clinical history that will be locked into the patient persona and incorporated into all generated documents:
-
-| Tab | Fields |
-| :--- | :--- |
-| **Medications** | Brand, Generic/Dosage, Qty, Prescribed By, Status, Start, End, Reason |
-| **Allergies** | Allergen, Type, Reaction, Severity, Onset Date |
-| **Vaccinations** | Name, Type, Date, Administered By, Dose #, Reason |
-| **Therapy & Behavioral Health** | Type, Provider, Facility, Frequency, Status, Dates, Reason, Notes |
-
-All rows are addable, removable, and pre-filled from an existing patient's stored record.
-
-### Live Generation Log
-
-A real-time console streams progress events as the AI runs, including milestones for persona creation, document generation, and any fixes applied.
-
-### Generated Output
-
-After generation, all documents (Reports, Persona, Summary) are listed as clickable links that open the PDF inline in a new browser tab.
-You will also see a **💾 Save as Template** button next to each document, which allows you to save that specific document as the global baseline template (archiving any previous template automatically).
-
-### Changes Summary Panel
-
-After each run, a 2×2 summary panel is shown:
-
-- **What Was Requested** — Sections chosen, data counts, PA optimize flag, feedback preview
-- **What Was Produced** — Patient name, document count, status
-- **Key Events** — Milestone log entries
-- **AI Changes Narrative** — The AI's own description of what changed
-
----
-
-## ✨ Key Features
-
-### Generation Control & Batching
-
-- **Batch Generation**: Support for processing multiple patients simultaneously. The system builds a queue and processes records sequentially while maintaining strict isolation.
-- **Cancel/Abort with Auto-Rollback**: Safely halt any long-running generation (single or batch) at any time. If a job is aborted mid-flight, the system automatically triggers a rollback to restore the previous state of the patient's documents and persona database, preventing corrupted or partial outputs.
-
-### Prior Authorization Workflow Support
-
-- **PA Optimization**: Toggle to automatically strengthen clinical justifications for likely-rejected cases
-- **PA Rejection Documents**: Generate intentionally deficient clinical documents (missing tests, failed criteria) to test denial workflows. Controlled via UI toggle and custom gap instructions.
-- **Complete PA Request Forms**: Requesting provider, urgency level, clinical justification, ICD-10 diagnoses, previous treatments, expected outcome
-- **Future Procedure Dates**: Procedure dates set 7–90 days in the future for realistic PA workflows
-- **Supporting Documents Cap**: Enforces a strict cap of `MAX_SUPPORTING_DOCUMENTS = 5` high-value report documents while always preserving all core documents (Prior Authorization Requests and Summaries). Capping is dynamically bypassed if the user inputs feedback specifying more (e.g., "generate 6 documents").
-- **Medications as First-Class Targets**: Intercepts CPT/HCPC codes starting with `J/Q` (e.g. `J0897`, `Q5124`) using regex, routing them to medication-specific prompts (step-therapies, contraindications, dosing, duration, and lab markers) with 100% backward compatibility for legacy consuming apps. Features dynamic HCPC vs CPT label switching in exported grids, fallback justifications, and clinical reports.
-- **Patient Tracker Export**: A landscape-aligned PDF grid and companion TSV compilation of patient Prior Authorization metrics saved to `generated_output/patient-data/`. Features enriched dual-formatting: PDF cell metrics use custom HTML formatting (bold headers, bulleted lists, and red text highlighting gaps) for a premium presentation, while TSV files are completely sanitized of HTML tags and use clean standard multi-line values (using newlines `\n` and plain text bullets `- `) for robust copy-pasting or direct importing into Microsoft Excel. The export supports exactly 12 columns: Patient ID, Patient Name, Department, CPT/HCPC Code (representing standard CPT or medication HCPC drug codes like J/Q), Procedure/Medicine Name, Provider, Insurance Type, Policy Name, extraction expectation (corresponds to details_from_extraction), likelihood expectations (corresponds to likelihood_without_documents), attachments, and post-attachment likelihood (incorporates likelihood_change_with_documents and Correct Items / Gaps details). It dynamically shifts CPT/HCPC labels depending on code format, resolves payer details from the persona `payer` block, and excludes version-suffixed persona PDFs case-insensitively.
-
-### Visual Scan Simulation (Non-AI-Friendly Look)
-
-- **Image-Based Rasterization**: Converts clean vector PDFs into flat, image-only documents to simulate scanned pages, preventing standard text selection and copy-pasting.
-- **Realistic Degradation Artifacts**: Simulates typical hardware artifacts including random page rotation (skew), CCD sensor line noise, paper grain, uneven scanning light gradients, dust/dirt speckles, and subtle lens blur.
-- **Adjustable Intensity**: Light, Medium, and Heavy presets customize the skew range, DPI resolution, noise level, and background paper tinting (e.g. aged/faded yellow paper).
-
-### Concise Clinical Summary (v6)
-
-The summary document is built to provide a cohesive clinical picture and includes 5 sections:
-1. **Test Case and Overview** — Narrative context of the procedure.
-2. **Details from Extraction** — CPT, ICD codes, constraints, and insurance details.
-3. **Likelihood/PA Probability (Without Supporting Documents)** — Baseline outcome estimates prior to reports.
-4. **Likelihood PA Score Change (Considering Each Document)** — Evaluation of document impact on the potential outcome.
-5. **OVERALL Summary** — Pointers for manual verification and QA checks.
-
-### Clinical Data Sections
-
-Medications, allergies, vaccinations, therapies, and behavioral notes are:
-
-- Captured via the interactive UI
-- Stored persistently in the patient database
-- Rendered into the **Persona PDF** as structured tables
-- Locked for existing patients to ensure consistency across regenerations
-
-### Texas Geographic Constraint
-
-All generated patient data — demographics, providers, facilities, addresses — is constrained to **Texas, USA** with realistic TX hospital names, addresses, and ZIP codes.
-
-### Temporal Consistency
-
-All generated data follows a realistic timeline:
-
-- **Medical History**: 6 months to 5 years before procedure
-- **Recent Encounters**: 1–12 weeks before procedure
-- **Lab Results**: 1–4 weeks before procedure
-- **Procedure Date**: 7–90 days in the future
-
-### Versioning System (vMajor.Minor)
-
-The system uses a two-tier versioning system to track changes:
-- **Major Version (vX)**: Incremented whenever a new **Patient Persona** is generated (e.g., v2.0 -> v3.0).
-- **Minor Version (.n)**: Incremented for subsequent **Reports** or **Summary** generations using the *same* persona (e.g., v3.0 -> v3.1 -> v3.2).
-- This ensures clinical consistency: if the persona changes, the version resets; if only documents change, the lineage is preserved.
-
-### Document Coherence
-
-When generating documents in different modes (persona only, reports only, summary only), the system ensures consistency:
-
-- Reports reference the same facility and dates from the persona
-- Summaries align with existing persona and reports
-- No contradictory information across documents
-- **Policy criteria summary is excluded from clinical reports and the persona** (reserved for internal annotator summary content)
-- **Medical history and biography are never blank** — bio narrative and report history sections are backfilled if missing
-- **Rejection → Approval for reports**: when supporting reports are generated, rejection/denial outcomes are treated as approval for clinical document generation
-
-### Intensive Document Generation (PA Support)
-
-To support Prior Authorization use cases, generated clinical documents are tuned for depth and audit-readiness:
-
-- **Content intensity**: Prompts require multi-sentence sections (e.g. findings, impression, clinical justification) with specific measurements and clinical detail; one-line or N/A-style answers are discouraged for core sections.
-- **Template-driven PDF layout**: Report sections follow the order defined in each template (`templates/*.json`). The system handles structured JSON natively, ensuring that clinical metadata is correctly injected by the pipeline rather than halluncinated by the AI.
-- **Diagnostic cases**: The default diagnostic case type now includes a consultation/office visit note in addition to the prior auth request and summary, so E&M-style cases produce three documents.
-- **Sparse-document warning**: If a report body is very short (&lt; 200 characters), the generator logs a warning suggesting regeneration with feedback.
-
-### FHIR-Compliant Data
-
-- Complete patient demographics, biometrics (race, height, weight)
-- Emergency contacts, insurance/payer details
-- Provider information with NPI
-- Medical coding (ICD-10, CPT)
-
----
-
-## 🛠️ Installation & Setup
-
-### 1. Prerequisites
-
-- Python 3.10+
-- OpenAI API Key **or** Google Cloud Vertex AI credentials
-
-### 2. Environment Setup
-
+### API Server Management
 ```bash
-git clone <repo-url>
-cd pdgenerator
-
-# Mac / Linux
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Windows
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-### 3. Configuration (`cred/.env`)
-
-```bash
-# Mac/Linux
-mkdir -p cred
-cp cred/.env.example cred/.env
-
-# Windows (cmd)
-mkdir cred 2>nul
-copy cred\.env.example cred\.env
-```
-
-Fill in `cred/.env`:
-
-```bash
-# ─── LLM Provider Configuration ───────────────────────────────────────────────
-# Switch between 'openai' and 'vertexai' here. No other changes needed.
-LLM_PROVIDER=openai          # or vertexai
-
-# ─── OpenAI ───────────────────────────────────────────────────────────────────
-OPENAI_API_KEY=sk-your-key-here
-
-# ─── Google Cloud / Vertex AI ─────────────────────────────────────────────────
-GCP_PROJECT_ID=your-project-id
-GCP_LOCATION=us-central1
-# Relative paths (./cred/...) are resolved against BASE_DIR automatically
-GOOGLE_APPLICATION_CREDENTIALS=./cred/gcp_auth_key.json
-
-# ─── Output & Runtime ─────────────────────────────────────────────────────────
-OUTPUT_DIR=/path/to/generated_output
-TEST_MODE=false
-
-# ─── Optional: Web Search ─────────────────────────────────────────────────────
-ENABLE_WEB_SEARCH=false
-TAVILY_API_KEY=your_tavily_key
-```
-
-**Vertex AI only:** Place your service account JSON at `cred/gcp_auth_key.json`.
-
----
-
-## 📁 Project Structure
-
-```text
-pdgenerator/
-├── cred/                       # Credentials (gitignored)
-│   ├── .env                    # Configuration
-│   └── examples/.env.example   # Template
-│
-├── core/                       # Reference data (Excel plan, code maps)
-│   ├── UAT Plan.xlsx           # Patient test cases
-│   └── cpt_code_map.json       # Derived CPT map
-│
-├── config/                     # Externalized rules & patterns
-│   ├── remediation_rules.json
-│   └── sanitization_patterns.json
-│
-├── src/
-│   ├── ai/                      # LLM client, prompts, models, QA, search
-│   ├── core/                    # Config + patient DB + state (patients_db.json)
-│   ├── data/                    # Loader + history + record writers
-│   ├── doc_generation/          # Planner, validator, PDF generation
-│   ├── utils/                   # File/date/purge utilities
-│   ├── cli.py                   # CLI entrypoint
-│   └── workflow.py              # Orchestration layer
-│
-├── ui/
-│   ├── index.html              # Dark interactive UI (Material You)
-│   └── index2.html             # Light interactive UI (Command Center)
-│
-├── templates/
-│   └── summary_template.json   # Clinical summary PDF layout
-│
-├── generated_output/           # Generated files (gitignored)
-│   ├── patient-data/<ID - Name - CPT - Outcome>/ # Per-patient documents
-│   │   └── *.pdf               # Persona, reports, summaries ONLY (latest generated)
-│   ├── patient-data/
-│   │   └── patient_tracker_export.csv # Compiled standard CSV Prior Authorization tracker (Excel copy-paste friendly)
-│   ├── archive/                # Archived/past generated versions
-│   ├── metadata/               # Patient text records (-record.txt)
-│   ├── summary/                # Clinical summary PDFs (flat structure)
-│   └── logs/                   # Generation logs and history tracking
-│
-├── api_server.py               # Flask REST API (serves the UI)
-├── run.py                      # CLI launcher (recommended)
-├── compact_patient_data.py     # CLI tool to compact DB/context/feedback
-├── remove_persona.py           # CLI tool to completely wipe a persona
-│
-├── run.bat                     # Windows CLI launcher
-├── run_api.bat                 # Windows API launcher
-├── run.sh                      # Mac/Linux CLI launcher
-├── run_api.sh                  # Mac/Linux API launcher
-└── requirements.txt
-```
-
-**Patient DB:** The database layer uses a storage repository abstraction (`PatientRepository`) supporting both local JSON files and PostgreSQL. By default, it uses the local JSON backend (`PATIENT_STORAGE_BACKEND=json`), saving data to `src/core/patients_db.json` (gitignored). If a legacy `core/patients_db.json` (gitignored) exists, it is automatically migrated on first load. Setting `PATIENT_STORAGE_BACKEND=postgres` routes database queries to PostgreSQL (fully implemented, index-optimized, and tested). All patient persona database files (`*patients_db.json`), generated PDFs (`*.pdf`), and execution logs (`*.log`) are excluded from Git to protect patient data and prevent repository bloating.
-**Feedback history:** Per-patient feedback/history is stored under `generated_output/logs/<ID - Name - CPT - Outcome>...`.
-
-### Key Files to Customize
-
-| File | Purpose |
-| :--- | :--- |
-| `src/ai/prompts.py` | Edit AI behaviour and generation instructions |
-| `cred/.env` | Configure API keys, output path, port |
-| `core/UAT Plan.xlsx` | Patient test cases |
-| `templates/summary_template.json` | PDF layout structure |
-| `templates/summary_template_concise.json` | Concise PDF layout structure |
-| `config/*.json` | External rules (remediation, sanitization) |
-
----
-
-## 🚀 Server Management
-
-The Web UI requires the Flask backend server (`api_server.py`) to be running.
-
-**Start the Server:**
-
-```bash
-# Mac/Linux
-source venv/bin/activate
+# Start Flask API server (runs on port 410 by default)
 python -m api_server
 
-# Windows
-venv\Scripts\activate
-python -m api_server
+# Stop the server on port 410
+lsof -i :410
+kill -9 <PID>
 ```
 
-*The server runs on port 410 by default. Access the UI by opening `ui/index.html` in your browser.*
-
-**Stop the Server:**
-
-- If running in a terminal, press `Ctrl + C`.
-- If running in the background, find the process and kill it:
-
-  ```bash
-  # Find process ID (PID)
-  lsof -i :410
-  # Kill process
-  kill -9 <PID>
-  ```
-
-**Restart the Server:**
-Simply stop the server using `Ctrl + C` or `kill`, and start it again using the start command.
-
----
-
-## 🌐 API Reference
-
-The `api_server.py` Flask server exposes multiple endpoints to power the UI and batch processing.
-
-### 📚 Interactive Swagger API Docs
-
-We have integrated full **Swagger OpenAPI documentation**. To explore the interactive API details, test endpoints, and view payloads, visit:
-👉 **[http://localhost:410/apidocs](http://localhost:410/apidocs)** *(assuming port 410)*
+### API Endpoints
+Full Swagger OpenAPI interactive documentation is available at:
+👉 **[http://localhost:410/apidocs](http://localhost:410/apidocs)**
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| GET | `/api/status` | Health check |
-| GET | `/api/patients` | List all patient IDs from Excel |
-| GET | `/api/patient/<id>` | Fetch stored patient record |
-| POST | `/api/generate` | Trigger single patient generation |
-| POST | `/api/generate_all` | 🔁 Trigger batch generation for all patients |
-| POST | `/api/cancel/<job_id>` | ⛔ Cancel an active generation job with auto-rollback |
-| POST | `/api/purge` | 🗑️ Purge specific databases or generated files (patient mode supports `targets[]` and `mode=delete/archive`) |
-| POST | `/api/template/save` | 💾 Save a generated document as a global template |
-| POST | `/api/patient_tracker_export` | 📊 Compile patient Prior Authorization metrics standard CSV (Excel copy-paste friendly) |
-| GET | `/api/job/<job_id>?since=N` | Poll job status + incremental logs |
-| GET | `/api/output/<patient_id>` | List all generated PDFs for a patient |
-| GET | `/api/download/<id>/<type>/<file>` | Serve PDF inline in browser |
-
----
-
-## 🔐 Credentials Management
-
-- The `cred/` folder is gitignored by default
-- Never commit API keys or service account files
-- Use `cred/.env.example` to reconstruct your environment at `cred/.env`
-
----
-
-## 🏗️ Architecture
-
-For a deep dive into the code structure, module interactions, and how to extend the system, refer to [ARCHITECTURE.md](ARCHITECTURE.md).
+| GET | `/api/status` | Server status |
+| GET | `/api/patients` | Retrieve patient checklist |
+| GET | `/api/patient/<id>` | Fetch active patient profile |
+| POST | `/api/generate` | Synthesize single patient documents |
+| POST | `/api/generate_all` | Trigger queue-based batch generation |
+| POST | `/api/cancel/<job_id>` | Abort run and rollback changes |
+| POST | `/api/purge` | Purge databases/files (supports batch `patient_ids`) |
+| POST | `/api/template/save` | Save a document as a baseline template |
+| POST | `/api/patient_tracker_export` | Compile metrics CSV tracker |
+| GET | `/api/job/<job_id>?since=N` | Poll logs dynamically |
+| GET | `/api/output/<patient_id>` | Fetch list of generated PDFs |
+| GET | `/api/download/<id>/<type>/<file>`| Open PDF inline in browser |
 
 ---
 
 ## 📝 License
-
 Proprietary / Internal Use Only.

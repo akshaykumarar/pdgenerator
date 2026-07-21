@@ -24,12 +24,29 @@ def confirm_action(message: str, force: bool = False) -> bool:
 
 
 def _archive_dir_for_patient(patient_id: str) -> str:
+    """
+    Creates and returns the archive directory path for a specific patient.
+
+    Args:
+        patient_id: The ID of the patient.
+
+    Returns:
+        The path to the created archive directory.
+    """
     archive_dir = get_patient_archive_folder(patient_id)
     os.makedirs(archive_dir, exist_ok=True)
     return archive_dir
 
 
-def _archive_files_for_patient(files: list[str], patient_id: str, label: str):
+def _archive_files_for_patient(files: list[str], patient_id: str, label: str) -> None:
+    """
+    Moves a list of patient files to the patient's archive directory with a timestamped prefix.
+
+    Args:
+        files: A list of file paths to archive.
+        patient_id: The ID of the patient.
+        label: A descriptive prefix label for the archived files.
+    """
     archive_dir = _archive_dir_for_patient(patient_id)
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     prefix = f"{label}_{timestamp}__"
@@ -40,11 +57,18 @@ def _archive_files_for_patient(files: list[str], patient_id: str, label: str):
         shutil.move(f, dst)
 
 
-def purge_patient_selective(patient_id: str, targets: list[str], mode: str = "delete", force: bool = False):
+def purge_patient_selective(patient_id: str, targets: list[str], mode: str = "delete", force: bool = False) -> None:
     """
-    Clears data for a SPECIFIC patient based on targets.
-    targets: persona, reports, summary, logs, db, records, debug
-    mode: delete | archive
+    Clears specific patient data targets (persona, reports, summary, logs, db, records, debug).
+
+    Args:
+        patient_id: The ID of the patient to purge.
+        targets: A list of items to purge (e.g. ['persona', 'reports']).
+        mode: The operation mode, either 'delete' or 'archive'.
+        force: If True, bypasses manual confirmation prompts.
+
+    Raises:
+        ValueError: If mode is not 'delete' or 'archive'.
     """
     if mode not in {"delete", "archive"}:
         raise ValueError("Invalid purge mode. Use 'delete' or 'archive'.")
@@ -102,7 +126,6 @@ def purge_patient_selective(patient_id: str, targets: list[str], mode: str = "de
                     print(f"      ✅ Deleted: {os.path.basename(f)}")
                 except Exception:
                     pass
-                    pass
 
     # Logs
     if "logs" in targets:
@@ -146,15 +169,12 @@ def purge_patient_selective(patient_id: str, targets: list[str], mode: str = "de
 
     print(f"\n   ✨ Patient {patient_id} Purge Complete.")
 
-def purge_all(force: bool = False):
+def purge_all(force: bool = False) -> None:
     """
-    Clears ALL generated data:
-    1. Documents
-    2. Summaries
-    3. Personas
-    4. Logs
-    5. Patient DB
-    6. Records
+    Clears ALL generated data including documents, summaries, personas, logs, DB, and records.
+
+    Args:
+        force: If True, bypasses manual confirmation prompts.
     """
     if not confirm_action("This will WIPEOUT ALL logs, documents, summaries, personas, records, and the Patient Database.", force=force):
         print("   ❌ Operation Cancelled.")
@@ -188,13 +208,15 @@ def purge_all(force: bool = False):
 
     print("\n   ✨ Purge Complete.")
 
-def purge_personas(force: bool = False):
+
+def purge_personas(force: bool = False) -> None:
     """
-    Clears:
-    1. patients_db.json
-    2. documents/personas/ folder
+    Clears all patient records from the Patient Database and deletes persona PDF files.
+
+    Args:
+        force: If True, bypasses manual confirmation prompts.
     """
-    if not confirm_action("This will clear ALL Personas from DB and delete the 'documents/personas' folder.", force=force):
+    if not confirm_action("This will clear ALL Personas from DB and delete all persona PDFs.", force=force):
         print("   ❌ Operation Cancelled.")
         return
 
@@ -211,17 +233,25 @@ def purge_personas(force: bool = False):
     if os.path.exists(PATIENT_DATA_DIR):
         for folder in os.listdir(PATIENT_DATA_DIR):
             p_root = os.path.join(PATIENT_DATA_DIR, folder)
-            for f in glob.glob(os.path.join(p_root, "*-persona-*.pdf")):
-                os.remove(f)
-                print(f"      ✅ Deleted: {os.path.basename(f)}")
+            if os.path.isdir(p_root):
+                for f in glob.glob(os.path.join(p_root, "*-persona-*.pdf")):
+                    try:
+                        os.remove(f)
+                        print(f"      ✅ Deleted: {os.path.basename(f)}")
+                    except Exception:
+                        pass
     
     print("\n   ✨ Personas Purged.")
 
-def purge_documents(force: bool = False):
+
+def purge_documents(force: bool = False) -> None:
     """
-    Clears report + summary folders but preserves personas.
+    Clears all report PDFs and summary PDFs but preserves patient personas.
+
+    Args:
+        force: If True, bypasses manual confirmation prompts.
     """
-    if not confirm_action("This will clear ALL Patient Documents (PDFs/Images) but PRESERVE Personas.", force=force):
+    if not confirm_action("This will clear ALL Patient Documents (Reports/Summaries) but PRESERVE Personas.", force=force):
         print("   ❌ Operation Cancelled.")
         return
 
@@ -230,24 +260,42 @@ def purge_documents(force: bool = False):
     if os.path.exists(PATIENT_DATA_DIR):
         for folder in os.listdir(PATIENT_DATA_DIR):
             p_root = os.path.join(PATIENT_DATA_DIR, folder)
-            for pattern in ["Clinical_Summary_Patient_*.pdf", "Annotator_Summary_Patient_*.pdf", "Concise_Summary_Patient_*.pdf"]:
-                for f in glob.glob(os.path.join(p_root, pattern)):
-                    os.remove(f)
+            if os.path.isdir(p_root):
+                # Clear reports (DOC-*.pdf)
+                for f in glob.glob(os.path.join(p_root, "DOC-*.pdf")):
+                    try:
+                        os.remove(f)
+                    except Exception:
+                        pass
+                # Clear summaries
+                for pattern in ["Clinical_Summary_Patient_*.pdf", "Annotator_Summary_Patient_*.pdf", "Concise_Summary_Patient_*.pdf"]:
+                    for f in glob.glob(os.path.join(p_root, pattern)):
+                        try:
+                            os.remove(f)
+                        except Exception:
+                            pass
         
         # Also clear dedicated summary folder
         if os.path.exists(SUMMARY_DIR):
-            shutil.rmtree(SUMMARY_DIR)
-            os.makedirs(SUMMARY_DIR)
+            try:
+                shutil.rmtree(SUMMARY_DIR)
+                os.makedirs(SUMMARY_DIR)
+            except Exception:
+                pass
             
         print(f"      ✅ Cleared reports + summaries.")
     
     print("\n   ✨ Documents Purged.")
 
-def purge_summaries_only(force: bool = False):
+
+def purge_summaries_only(force: bool = False) -> None:
     """
-    Deletes ONLY summary PDFs from the summary/ folder.
+    Deletes only summary PDFs from the summary/ folder and patient folders.
+
+    Args:
+        force: If True, bypasses manual confirmation prompts.
     """
-    if not confirm_action("This will delete ALL Annotator Summary PDFs but preserve Reports and Personas.", force=force):
+    if not confirm_action("This will delete ALL Summary PDFs but preserve Reports and Personas.", force=force):
         print("   ❌ Operation Cancelled.")
         return
 
@@ -258,23 +306,34 @@ def purge_summaries_only(force: bool = False):
     if os.path.exists(PATIENT_DATA_DIR):
         for folder in os.listdir(PATIENT_DATA_DIR):
             p_root = os.path.join(PATIENT_DATA_DIR, folder)
-            for pattern in ["Clinical_Summary_Patient_*.pdf", "Annotator_Summary_Patient_*.pdf", "Concise_Summary_Patient_*.pdf"]:
-                for f in glob.glob(os.path.join(p_root, pattern)):
-                    os.remove(f)
-                    count += 1
-                    print(f"      ✅ Deleted (legacy): {os.path.basename(f)}")
+            if os.path.isdir(p_root):
+                for pattern in ["Clinical_Summary_Patient_*.pdf", "Annotator_Summary_Patient_*.pdf", "Concise_Summary_Patient_*.pdf"]:
+                    for f in glob.glob(os.path.join(p_root, pattern)):
+                        try:
+                            os.remove(f)
+                            count += 1
+                            print(f"      ✅ Deleted (legacy): {os.path.basename(f)}")
+                        except Exception:
+                            pass
     
     # 2. Clear dedicated summary folder
     if os.path.exists(SUMMARY_DIR):
-        shutil.rmtree(SUMMARY_DIR)
-        os.makedirs(SUMMARY_DIR)
-        print(f"      ✅ Wiped dedicated summary folder: {SUMMARY_DIR}/")
+        try:
+            shutil.rmtree(SUMMARY_DIR)
+            os.makedirs(SUMMARY_DIR)
+            print(f"      ✅ Wiped dedicated summary folder: {SUMMARY_DIR}/")
+        except Exception:
+            pass
     
     print(f"\n   ✨ Deleted {count} summary file(s).")
 
-def purge_reports_only(force: bool = False):
+
+def purge_reports_only(force: bool = False) -> None:
     """
-    Deletes ONLY report PDFs (DOC-*.pdf) for all patients, preserving summaries and personas.
+    Deletes only report PDFs (DOC-*.pdf) for all patients, preserving summaries and personas.
+
+    Args:
+        force: If True, bypasses manual confirmation prompts.
     """
     if not confirm_action("This will delete ALL Report PDFs but preserve Summaries and Personas.", force=force):
         print("   ❌ Operation Cancelled.")
@@ -286,17 +345,25 @@ def purge_reports_only(force: bool = False):
     if os.path.exists(PATIENT_DATA_DIR):
         for folder in os.listdir(PATIENT_DATA_DIR):
             p_root = os.path.join(PATIENT_DATA_DIR, folder)
-            report_files = glob.glob(os.path.join(p_root, "DOC-*.pdf"))
-            for f in report_files:
-                os.remove(f)
-                count += 1
-                print(f"      ✅ Deleted: {os.path.basename(f)}")
+            if os.path.isdir(p_root):
+                report_files = glob.glob(os.path.join(p_root, "DOC-*.pdf"))
+                for f in report_files:
+                    try:
+                        os.remove(f)
+                        count += 1
+                        print(f"      ✅ Deleted: {os.path.basename(f)}")
+                    except Exception:
+                        pass
     
     print(f"\n   ✨ Deleted {count} report file(s).")
 
-def purge_reports_and_summaries(force: bool = False):
+
+def purge_reports_and_summaries(force: bool = False) -> None:
     """
-    Deletes both reports and summaries, but preserves personas.
+    Deletes both report and summary PDFs, preserving patient personas.
+
+    Args:
+        force: If True, bypasses manual confirmation prompts.
     """
     if not confirm_action("This will delete ALL Reports and Summaries but preserve Personas.", force=force):
         print("   ❌ Operation Cancelled.")
@@ -307,23 +374,41 @@ def purge_reports_and_summaries(force: bool = False):
     if os.path.exists(PATIENT_DATA_DIR):
         for folder in os.listdir(PATIENT_DATA_DIR):
             p_root = os.path.join(PATIENT_DATA_DIR, folder)
-            for pattern in ["Clinical_Summary_Patient_*.pdf", "Annotator_Summary_Patient_*.pdf", "Concise_Summary_Patient_*.pdf"]:
-                for f in glob.glob(os.path.join(p_root, pattern)):
-                    os.remove(f)
+            if os.path.isdir(p_root):
+                # Clear reports
+                for f in glob.glob(os.path.join(p_root, "DOC-*.pdf")):
+                    try:
+                        os.remove(f)
+                    except Exception:
+                        pass
+                # Clear summaries
+                for pattern in ["Clinical_Summary_Patient_*.pdf", "Annotator_Summary_Patient_*.pdf", "Concise_Summary_Patient_*.pdf"]:
+                    for f in glob.glob(os.path.join(p_root, pattern)):
+                        try:
+                            os.remove(f)
+                        except Exception:
+                            pass
         
         # Also clear dedicated summary folder
         if os.path.exists(SUMMARY_DIR):
-            shutil.rmtree(SUMMARY_DIR)
-            os.makedirs(SUMMARY_DIR)
+            try:
+                shutil.rmtree(SUMMARY_DIR)
+                os.makedirs(SUMMARY_DIR)
+            except Exception:
+                pass
             
         print(f"      ✅ Deleted: reports + summaries.")
     
     print("\n   ✨ Reports and Summaries Purged.")
 
-def purge_patient(patient_id: str, force: bool = False):
+
+def purge_patient(patient_id: str, force: bool = False) -> None:
     """
-    Clears data for a SPECIFIC patient:
-    Default: persona, reports, summary, logs, db, records, debug
+    Clears all generated data files and DB record for a specific patient.
+
+    Args:
+        patient_id: The ID of the patient to purge.
+        force: If True, bypasses manual confirmation prompts.
     """
     default_targets = ["persona", "reports", "summary", "logs", "db", "records", "debug"]
     purge_patient_selective(patient_id, default_targets, mode="delete", force=force)

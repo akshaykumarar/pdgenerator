@@ -41,7 +41,7 @@ All generated documents must derive from a single structured patient record call
 ```mermaid
 graph TD
     subgraph Input
-        UI["User Input / UI (ui/index.html, index2.html)"]
+        UI["User Input / UI (ui/index.html)"]
     end
     subgraph Processing
         API["API Server (api_server.py)"] --> Generator["Workflow Orchestrator (src/workflow.py)"]
@@ -304,14 +304,7 @@ Handles compiling clinical Prior Authorization patient metrics for a selected su
 Handles post-processing simulation to turn clean, selectable vector PDFs into flat, image-only scanned-looking files.
 - **Conversion Pipeline**: Converts each PDF page into a high-DPI image buffer using PyMuPDF (`fitz`), skews/rotates the image slightly to simulate feeding errors, introduces Gaussian sensor noise, applies a lighting gradient overlay for uneven scanner shadows, adds optional paper tints, and compiles the images back into an image-only PDF.
 
-### UI Layer (`ui/`)
-
-| File | Theme | Description |
-|------|-------|-------------|
-| `index.html` | Dark (Material You) | Original Stitch dark design |
-| `index2.html` | Light (Command Center) | New Stitch light design |
-
-Both UIs wire dynamically to the API server at `http://localhost:410`.
+The interface is defined in `index.html` (Material You dark theme) and wires dynamically to the API server at `http://localhost:410`.
 
 ---
 
@@ -330,9 +323,7 @@ pdgenerator/
 │   ├── metadata/               # Patient text records & tracker records
 │   ├── summary/                # Dedicated clinical summary PDFs (flat structure)
 │   └── debug/                  # Internal patient_state JSON states
-├── ui/
-│   ├── index.html              # Dark UI (Material You)
-│   └── index2.html             # Light UI (Command Center)
+│   └── index.html              # Dark UI (Material You)
 ├── src/
 │   ├── ai/                      # LLM client, prompts, models, QA, search
 │   ├── core/                    # Config + patient DB + state (patients_db.json)
