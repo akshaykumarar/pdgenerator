@@ -1219,15 +1219,21 @@ def api_purge():
         elif target == "reports_only":
             purge_manager.purge_reports_only(force=True)
         elif target == "patient":
-            p_id = body.get("patient_id")
-            if not p_id:
-                return jsonify({"error": "patient_id required"}), 400
+            patient_ids = body.get("patient_ids", [])
+            if not patient_ids:
+                p_id = body.get("patient_id")
+                if not p_id:
+                    return jsonify({"error": "patient_id or patient_ids required"}), 400
+                patient_ids.append(p_id)
+            
             mode = body.get("mode", "delete")
             targets = body.get("targets")
-            if targets:
-                purge_manager.purge_patient_selective(p_id, targets, mode=mode, force=True)
-            else:
-                purge_manager.purge_patient(p_id, force=True)
+
+            for p_id in patient_ids:
+                if targets:
+                    purge_manager.purge_patient_selective(p_id, targets, mode=mode, force=True)
+                else:
+                    purge_manager.purge_patient(p_id, force=True)
         else:
             return jsonify({"error": "Invalid target"}), 400
             
