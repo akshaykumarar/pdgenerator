@@ -36,7 +36,7 @@ The Web UI is the recommended way to use the generator.
 1. **Environment**: Python 3.10+
 2. **Virtual Env**: `python -m venv venv`
 3. **Dependencies**: `pip install -r requirements.txt`
-4. **Credentials**: Copy `core/.env.example` to `cred/.env` and add your API keys.
+4. **Credentials**: Copy `cred/.env.example` to `cred/.env` and add your API keys.
 
 #### Interactive Commands
 
@@ -299,11 +299,11 @@ pip install -r requirements.txt
 ```bash
 # Mac/Linux
 mkdir -p cred
-cp core/.env.example cred/.env
+cp cred/.env.example cred/.env
 
 # Windows (cmd)
 mkdir cred 2>nul
-copy core\.env.example cred\.env
+copy cred\.env.example cred\.env
 ```
 
 Fill in `cred/.env`:
@@ -470,7 +470,7 @@ We have integrated full **Swagger OpenAPI documentation**. To explore the intera
 
 - The `cred/` folder is gitignored by default
 - Never commit API keys or service account files
-- Use `core/.env.example` to reconstruct your environment at `cred/.env`
+- Use `cred/.env.example` to reconstruct your environment at `cred/.env`
 
 ---
 

@@ -15,8 +15,6 @@ from ..core.config import (
     DEBUG_DIR,
     get_patient_root,
 )
-DB_PATH = patient_db.DB_PATH
-
 def confirm_action(message: str, force: bool = False) -> bool:
     """Asks user for confirmation, or skips if force=True."""
     if force: return True

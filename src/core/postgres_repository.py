@@ -1,6 +1,10 @@
 import os
+import re
 from typing import Dict, Any, Optional, List, Set
 from .repository import PatientRepository
+
+# Valid PostgreSQL identifier: starts with letter or underscore, alphanumeric/underscore only
+_SCHEMA_NAME_RE = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
 
 class PostgresPatientRepository(PatientRepository):
     """PostgreSQL repository implementation using psycopg2."""
@@ -9,6 +13,13 @@ class PostgresPatientRepository(PatientRepository):
         """Initializes the PostgreSQL repository, caching database schema configuration."""
         # Cache schema name, defaults to 'pdgenerator'
         self.schema = os.getenv("DB_SCHEMA", "pdgenerator").strip()
+        if not _SCHEMA_NAME_RE.match(self.schema):
+            raise ValueError(
+                f"Invalid DB_SCHEMA value '{self.schema}'. "
+                "Schema names must match ^[a-zA-Z_][a-zA-Z0-9_]*$ to prevent SQL injection."
+            )
+        # Guard flag: DDL is executed only once per repository instance
+        self._schema_initialized = False
 
     def _connect(self) -> Any:
         """
@@ -43,6 +54,13 @@ class PostgresPatientRepository(PatientRepository):
             raise RuntimeError(f"PostgreSQL Connection Error: {e}")
 
     def _init_db(self) -> None:
+        """Creates the schema, table, and indexes if they do not exist.
+        
+        Runs DDL exactly once per repository instance. Subsequent calls are no-ops.
+        This prevents opening redundant connections on every patient operation.
+        """
+        if self._schema_initialized:
+            return
         conn = self._connect()
         try:
             with conn.cursor() as cur:
@@ -63,6 +81,7 @@ class PostgresPatientRepository(PatientRepository):
                 cur.execute(f"CREATE INDEX IF NOT EXISTS idx_patients_dob ON {self.schema}.patients(dob);")
                 cur.execute(f"CREATE INDEX IF NOT EXISTS idx_patients_persona_gin ON {self.schema}.patients USING gin(persona_data);")
             conn.commit()
+            self._schema_initialized = True
         except Exception as e:
             conn.rollback()
             raise RuntimeError(f"PostgreSQL Database Initialization Error: {e}")

@@ -601,11 +601,38 @@ API server runs on `http://localhost:410` by default (`API_PORT` env var).
 
 The patient storage persistence layer uses a repository pattern decoupled from business logic:
 - Toggle between backends using `PATIENT_STORAGE_BACKEND` env var: `'json'` (local file) or `'postgres'` (PostgreSQL database).
-- **PostgreSQL Schema**: Defined in `src/core/schema.sql`. Schema is initialized automatically via the repository. Uses indices on `last_name, first_name` and `dob` for deduplication/listing, and a GIN index on `persona_data` (JSONB) for robust querying.
+- **PostgreSQL Schema**: Defined in `src/core/schema.sql`. Schema is initialized automatically via the repository (exactly once per instance via `_schema_initialized` guard). Uses indices on `last_name, first_name` and `dob` for deduplication/listing, and a GIN index on `persona_data` (JSONB) for robust querying.
 - **Migration Scripts**:
   - `migrate_json_to_postgres.py` transfers JSON patient records to PostgreSQL.
   - `migrate_postgres_to_json.py` reverse migrates PostgreSQL records to JSON.
   - Both CLI scripts accept `--strategy` option (`skip`, `update`, `fail`) to resolve duplicate ID conflicts.
+- **Schema name validation**: `DB_SCHEMA` env var is validated against `^[a-zA-Z_][a-zA-Z0-9_]*$` on repository instantiation.
+- **All patient data operations** route through `src/core/patient_db.py` → `PatientRepository` → active backend. No module touches `patients_db.json` directly outside `json_repository.py`.
+
+---
+
+# Post-Audit Fixes Applied (2026-07-21)
+
+Full audit report: `artifacts/audit_report.md`
+
+Fixes applied:
+- `compact_patient_data.py`: Fixed `NameError` crash on `--all` — replaced `set(data.keys())` with `set(patient_db.list_patient_ids())`.
+- `compact_patient_data.py`: Removed dead `_compact_patient_db()` function (legacy direct-JSON code, no longer called).
+- `src/utils/purge_manager.py`: Removed unused `DB_PATH = patient_db.DB_PATH` import.
+- `src/core/postgres_repository.py`: Added `_schema_initialized` guard — DDL runs once per instance, not per operation.
+- `src/core/postgres_repository.py`: Added `DB_SCHEMA` name regex validation in `__init__`.
+- `cred/.env.example`: Added missing `API_PORT` variable.
+- `README.md`: Fixed three references pointing to `core/.env.example` → `cred/.env.example`.
+
+---
+
+# Production Readiness & Final Polish (2026-07-21)
+
+Applied final polish updates:
+- `run.py`: Created root-level CLI launcher script for bootstrapping the interactive interface.
+- `src/remove_persona.py`: Fixed `purge_manager` import path to prevent CLI execution failures.
+- `tests/test_repository.py`: Added SQL injection and schema validation unit tests.
+- Deletions: Removed obsolete empty `patients_db.json` (root) and legacy `core/.env.example`.
 
 ---
 

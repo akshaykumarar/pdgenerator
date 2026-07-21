@@ -1,6 +1,7 @@
 import os
 import tempfile
 import json
+# pyrefly: ignore [missing-import]
 import pytest
 from src.core.repository import PatientRepository
 from src.core.json_repository import JSONPatientRepository
@@ -219,3 +220,23 @@ def test_factory_delegation(monkeypatch):
 
     # Reset repository singleton to default (json) after test
     patient_db._repository = None
+
+
+def test_postgres_schema_validation(monkeypatch):
+    """Verify that PostgresPatientRepository validates the DB_SCHEMA environment variable correctly."""
+    # Test invalid schema names containing special characters or SQL injection attempts
+    monkeypatch.setenv("DB_SCHEMA", "invalid-schema-name")
+    with pytest.raises(ValueError) as excinfo:
+        PostgresPatientRepository()
+    assert "Invalid DB_SCHEMA value" in str(excinfo.value)
+
+    monkeypatch.setenv("DB_SCHEMA", "schema; drop table patients;")
+    with pytest.raises(ValueError) as excinfo:
+        PostgresPatientRepository()
+    assert "Invalid DB_SCHEMA value" in str(excinfo.value)
+
+    # Test valid schema names
+    monkeypatch.setenv("DB_SCHEMA", "valid_schema_123")
+    repo = PostgresPatientRepository()
+    assert repo.schema == "valid_schema_123"
+
