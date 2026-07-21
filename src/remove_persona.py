@@ -1,6 +1,6 @@
 import sys
 import argparse
-from purge_manager import purge_patient
+from utils.purge_manager import purge_patient
 
 def main():
     parser = argparse.ArgumentParser(description="Completely remove all data and history for a specific persona.")

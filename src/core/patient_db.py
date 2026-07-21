@@ -1,121 +1,89 @@
-import json
 import os
-from typing import Optional, Dict
+from typing import Optional, Dict, List, Set
+from dotenv import load_dotenv
+
+# Load database configuration from cred/.env relative to project root
+_project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_env_path = os.path.join(_project_root, "cred", ".env")
+load_dotenv(_env_path)
+
+from .json_repository import JSONPatientRepository
+from .postgres_repository import PostgresPatientRepository
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "patients_db.json")
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-LEGACY_DB_PATH = os.path.join(PROJECT_ROOT, "core", "patients_db.json")
 
+_repository = None
 
-def _migrate_legacy_db() -> bool:
-    """Migrate legacy patient DB from project_root/core into src/core if present."""
-    if not os.path.exists(LEGACY_DB_PATH):
-        return False
-    try:
-        with open(LEGACY_DB_PATH, "r", encoding="utf-8") as f:
-            legacy_data = json.load(f)
-        if not isinstance(legacy_data, dict) or not legacy_data:
-            return False
-        with open(DB_PATH, "w", encoding="utf-8") as f:
-            json.dump(legacy_data, f, indent=2)
-        print("   🔁 Migrated legacy patient DB to src/core/patients_db.json")
-        return True
-    except Exception:
-        return False
+def get_repository():
+    """
+    Returns the active database repository instance based on PATIENT_STORAGE_BACKEND.
+    """
+    global _repository
+    if _repository is None:
+        backend = os.getenv("PATIENT_STORAGE_BACKEND", "json").strip().lower()
+        if backend == "postgres":
+            # For PostgreSQL, we instantiate PostgresPatientRepository
+            _repository = PostgresPatientRepository()
+        elif backend == "json":
+            # For JSON, we instantiate JSONPatientRepository with the default DB_PATH
+            _repository = JSONPatientRepository(DB_PATH)
+        else:
+            raise ValueError(
+                f"Unknown PATIENT_STORAGE_BACKEND value '{backend}'. "
+                "Supported backends are 'json' and 'postgres'."
+            )
+    return _repository
 
-
-def _init_db():
-    if not os.path.exists(DB_PATH):
-        if _migrate_legacy_db():
-            return
-        with open(DB_PATH, "w", encoding="utf-8") as f:
-            json.dump({}, f)
-        return
-
-    # If DB exists but is empty/invalid, attempt migration
-    try:
-        with open(DB_PATH, "r", encoding="utf-8") as f:
-            current = json.load(f)
-        if isinstance(current, dict) and not current:
-            if _migrate_legacy_db():
-                return
-    except (json.JSONDecodeError, ValueError):
-        if _migrate_legacy_db():
-            return
-        with open(DB_PATH, "w", encoding="utf-8") as f:
-            json.dump({}, f)
+def _init_db() -> None:
+    """Delegates to the active repository to initialize the database."""
+    get_repository()._init_db()
 
 def load_patient(patient_id: str) -> Optional[Dict]:
     """
-    Loads patient data (name, db, gender, persona) from the central JSON DB.
+    Loads patient data (name, dob, gender, persona) from the active storage.
     Returns None if not found.
     """
-    _init_db()
-    try:
-        with open(DB_PATH, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-    except (json.JSONDecodeError, ValueError):
-        # Handle corrupted or empty JSON file
-        print(f"   ⚠️  Warning: patients_db.json was corrupted. Reinitializing...")
-        with open(DB_PATH, 'w', encoding='utf-8') as f:
-            json.dump({}, f)
-        data = {}
-    
-    # Handle both string/int keys
-    key = str(patient_id)
-    return data.get(key)
+    return get_repository().load_patient(patient_id)
 
 def save_patient(patient_id: str, patient_data: Dict):
     """
-    Saves or updates patient data in the central JSON DB.
-    patient_data should include: name, dob, gender, persona_content, etc.
+    Saves or updates patient data in the active storage.
     """
-    _init_db()
-    
-    # Read strict
-    try:
-        with open(DB_PATH, 'r', encoding='utf-8') as f:
-            current_db = json.load(f)
-    except (json.JSONDecodeError, ValueError):
-        # Handle corrupted or empty JSON file
-        current_db = {}
-    
-    # Update
-    key = str(patient_id)
-    if key not in current_db:
-        current_db[key] = {}
-    
-    current_db[key].update(patient_data)
-    
-    # Write back
-    with open(DB_PATH, 'w', encoding='utf-8') as f:
-        json.dump(current_db, f, indent=2)
-    
-    print(f"      💾 Patient {patient_id} ({patient_data.get('name', 'Unknown')}) saved to Core DB.")
+    get_repository().save_patient(patient_id, patient_data)
 
 def get_patient_name(patient_id: str) -> Optional[str]:
     """Loads a patient and returns their full name."""
-    p = load_patient(patient_id)
-    if p:
-        return f"{p.get('first_name', '')} {p.get('last_name', '')}".strip()
-    return None
+    return get_repository().get_patient_name(patient_id)
 
-def get_all_patient_names() -> list[str]:
+def get_all_patient_names() -> List[str]:
     """
     Returns a list of all 'First Last' names currently in the DB.
     Used to prevent duplicate personas.
     """
-    _init_db()
-    try:
-        with open(DB_PATH, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        
-        names = []
-        for pid, p_data in data.items():
-            fname = p_data.get('first_name', '')
-            lname = p_data.get('last_name', '')
-            if fname and lname:
-                names.append(f"{fname} {lname}")
-        return names
-    except Exception:
-        return []
+    return get_repository().get_all_patient_names()
+
+def list_patient_ids() -> List[str]:
+    """
+    Returns a list of all patient IDs currently in the DB.
+    """
+    return get_repository().list_patient_ids()
+
+def delete_patient(patient_id: str, archive_dir: str | None = None) -> bool:
+    """
+    Removes a patient record from the database.
+    Optionally archives the data to a file inside the archive_dir if provided.
+    """
+    return get_repository().delete_patient(patient_id, archive_dir=archive_dir)
+
+def reset_database() -> None:
+    """
+    Wipes the database/storage to a completely empty state.
+    """
+    get_repository().reset_database()
+
+def compact_patients(patient_ids: Set[str], max_text: int, max_bio: int, dry_run: bool) -> int:
+    """
+    Compacts text/bio fields for specified or all patients.
+    Returns the number of updated records.
+    """
+    return get_repository().compact_patients(patient_ids, max_text, max_bio, dry_run)

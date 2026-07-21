@@ -15,8 +15,6 @@ from ..core.config import (
     DEBUG_DIR,
     get_patient_root,
 )
-DB_PATH = patient_db.DB_PATH
-
 def confirm_action(message: str, force: bool = False) -> bool:
     """Asks user for confirmation, or skips if force=True."""
     if force: return True
@@ -143,26 +141,8 @@ def purge_patient_selective(patient_id: str, targets: list[str], mode: str = "de
 
     # DB entry
     if "db" in targets:
-        data = {}
-        if os.path.exists(DB_PATH):
-            try:
-                with open(DB_PATH, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-            except (json.JSONDecodeError, IOError):
-                data = {}
-        if str(patient_id) in data:
-            if mode == "archive":
-                archive_dir = _archive_dir_for_patient(patient_id)
-                archive_path = os.path.join(archive_dir, f"patient_{patient_id}_db.json")
-                with open(archive_path, "w", encoding="utf-8") as f:
-                    json.dump(data[str(patient_id)], f, indent=2)
-                print(f"      ✅ Archived DB entry: {os.path.basename(archive_path)}")
-            del data[str(patient_id)]
-            with open(DB_PATH, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2)
-            print(f"      ✅ Removed from DB: {patient_id}")
-        else:
-            print(f"      ℹ️  ID {patient_id} not found in DB.")
+        archive_dir = _archive_dir_for_patient(patient_id) if mode == "archive" else None
+        patient_db.delete_patient(patient_id, archive_dir=archive_dir)
 
     print(f"\n   ✨ Patient {patient_id} Purge Complete.")
 
@@ -190,11 +170,10 @@ def purge_all(force: bool = False):
 
     # 5. Patient DB
     try:
-        with open(DB_PATH, 'w', encoding='utf-8') as f:
-            json.dump({}, f)
-        print(f"      ✅ Reset: {DB_PATH}")
-    except IOError:
-        print(f"      ⚠️  Could not reset DB at {DB_PATH}")
+        patient_db.reset_database()
+        print("      ✅ Reset: Patient Database")
+    except Exception as e:
+        print(f"      ⚠️  Could not reset DB: {e}")
 
     # 2. Additional Folders
     for d in ["logs", "metadata", "archive", "summary"]:
@@ -223,11 +202,10 @@ def purge_personas(force: bool = False):
 
     # 1. DB
     try:
-        with open(DB_PATH, 'w', encoding='utf-8') as f:
-            json.dump({}, f)
-        print(f"      ✅ Reset: {DB_PATH}")
-    except IOError:
-        print(f"      ⚠️  Could not reset DB at {DB_PATH}")
+        patient_db.reset_database()
+        print("      ✅ Reset: Patient Database")
+    except Exception as e:
+        print(f"      ⚠️  Could not reset DB: {e}")
 
     # 2. Personas Files
     if os.path.exists(PATIENT_DATA_DIR):

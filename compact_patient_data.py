@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+-#!/usr/bin/env python3
 import argparse
 import json
 import os
@@ -198,19 +198,8 @@ def _compact_patient_record_feedback(path: str, max_feedback: int, dry_run: bool
 
 
 # ─── DATA COMPACTION ───────────────────────────────────────────────────────────
-
-def _compact_patient_db(data: Dict[str, Any], patient_ids: set[str], max_text: int, max_bio: int) -> Tuple[Dict[str, Any], int]:
-    updated_count = 0
-    for pid, record in data.items():
-        if patient_ids and pid not in patient_ids:
-            continue
-        if not isinstance(record, dict):
-            continue
-        new_record, truncated = _compact_value(record, max_text, max_bio)
-        if truncated:
-            data[pid] = new_record
-            updated_count += 1
-    return data, updated_count
+# DB compaction is fully delegated to patient_db.compact_patients() which routes
+# through the active backend (JSON or PostgreSQL). No direct file access here.
 
 
 # ─── MAIN ──────────────────────────────────────────────────────────────────────
@@ -245,25 +234,20 @@ def main():
         sys.exit(1)
 
     # 1. Compact patient DB
-    patient_db._init_db()
     try:
-        with open(patient_db.DB_PATH, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    except Exception:
-        print(f"⚠️  Could not read patient DB at {patient_db.DB_PATH}")
-        data = {}
-
-    if isinstance(data, dict):
-        data, updated = _compact_patient_db(data, patient_ids, args.max_text, args.max_bio)
-        if updated and not args.dry_run:
-            with open(patient_db.DB_PATH, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2)
+        updated = patient_db.compact_patients(
+            patient_ids,
+            max_text=args.max_text,
+            max_bio=args.max_bio,
+            dry_run=args.dry_run
+        )
         print(f"✅ DB compacted: {updated} patient record(s) updated.")
-    else:
-        print("⚠️  Invalid DB format; skipping DB compaction.")
+    except Exception as e:
+        print(f"⚠️  Could not compact patient DB: {e}")
 
     # 2. Compact history logs + patient record feedback
-    targets = patient_ids or set(data.keys())
+    # Resolve all patient IDs from the active storage backend when --all is used
+    targets = patient_ids or set(patient_db.list_patient_ids())
     hist_changed = 0
     rec_changed = 0
     

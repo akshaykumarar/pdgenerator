@@ -264,13 +264,19 @@ Hardcoded logic is externalized into JSON configs:
 
 ### Patient Database (`src/core/patient_db.py`)
 
-Persistent storage of generated personas in `src/core/patients_db.json` (gitignored) to preserve consistency across runs.
+The persistence layer uses a storage repository abstraction (`PatientRepository` defined in `src/core/repository.py`) to decouple business logic from the storage engine. 
 
-Legacy `core/patients_db.json` (gitignored) is automatically migrated into `src/core/patients_db.json` on first load.
+The active engine is chosen via the `PATIENT_STORAGE_BACKEND` environment variable:
+* `json`: (Default) Saves data top-level to `src/core/patients_db.json` (gitignored). Legacy `core/patients_db.json` is auto-migrated on first load.
+* `postgres`: Routes requests to PostgreSQL (fully implemented, index-optimized, and tested).
+  - **DDL Schema**: Defined in `src/core/schema.sql`. Creates the `patients` table, constraints, B-tree indexes on names and dates of birth, and a GIN index on `persona_data` (JSONB).
+  - **Initialization Guard**: `_schema_initialized` flag ensures DDL runs exactly once per repository instance — not on every operation — eliminating redundant connection overhead.
+  - **Schema Validation**: `DB_SCHEMA` env var is validated against `^[a-zA-Z_][a-zA-Z0-9_]*$` on instantiation to prevent malformed identifiers.
+  - **Migration Utilities**: `migrate_json_to_postgres.py` and `migrate_postgres_to_json.py` transfer data between backends and support `skip`/`update`/`fail` conflict resolution strategies.
 
-Both patient databases, along with the root `patients_db.json`, are excluded from Git to prevent storing patient details or generated test outputs in the code repository.
+Module-level wrappers in `src/core/patient_db.py` act as a factory and delegate all load/save/delete/reset/compaction operations to the active repository instance. All script data operations (e.g. log compaction in `compact_patient_data.py`, selectively purging in `purge_manager.py`) utilize these abstractions rather than touching file pathways directly.
 
-Use `compact_patient_data.py` to truncate long patient DB fields and trim per-patient history/feedback logs for smaller context sizes.
+If a database operation fails, the application immediately propagates a descriptive exception to halt execution for immediate debugging. Use `compact_patient_data.py` to compact DB fields and trim logs.
 
 ### Patient Tracker Exporter (`src/doc_generation/patient_tracker_export.py`)
 

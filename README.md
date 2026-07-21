@@ -36,7 +36,7 @@ The Web UI is the recommended way to use the generator.
 1. **Environment**: Python 3.10+
 2. **Virtual Env**: `python -m venv venv`
 3. **Dependencies**: `pip install -r requirements.txt`
-4. **Credentials**: Copy `core/.env.example` to `cred/.env` and add your API keys.
+4. **Credentials**: Copy `cred/.env.example` to `cred/.env` and add your API keys.
 
 #### Interactive Commands
 
@@ -74,6 +74,29 @@ Defaults:
 - Truncates long text fields in `patients_db.json` (including `bio_narrative`)
 - Keeps the last 5 history entries in `archive/log/<id>.txt`
 - Trims feedback blocks in `<id>-record.txt`
+
+#### Database Migration CLI
+
+To migrate records between the Local JSON database and PostgreSQL storage, run:
+
+```bash
+# Migrate JSON -> PostgreSQL (overwriting duplicates by default)
+python migrate_json_to_postgres.py --strategy update
+
+# Reverse migrate PostgreSQL -> JSON (skipping duplicates)
+python migrate_postgres_to_json.py --strategy skip
+
+# Migrate JSON -> PostgreSQL and abort if any duplicate ID is found
+python migrate_json_to_postgres.py --strategy fail
+
+# Specify custom JSON database path
+python migrate_json_to_postgres.py --json-path /path/to/custom_patients_db.json --strategy update
+```
+
+Options for `--strategy`:
+- `update`: Overwrites the destination record with source data on duplicate ID.
+- `skip`: Skips migration for existing patient IDs.
+- `fail`: Aborts the migration process immediately (fail-fast) if any conflicts exist.
 
 ---
 
@@ -276,11 +299,11 @@ pip install -r requirements.txt
 ```bash
 # Mac/Linux
 mkdir -p cred
-cp core/.env.example cred/.env
+cp cred/.env.example cred/.env
 
 # Windows (cmd)
 mkdir cred 2>nul
-copy core\.env.example cred\.env
+copy cred\.env.example cred\.env
 ```
 
 Fill in `cred/.env`:
@@ -366,7 +389,7 @@ pdgenerator/
 └── requirements.txt
 ```
 
-**Patient DB:** The active database lives at `src/core/patients_db.json` (gitignored). If a legacy `core/patients_db.json` (gitignored) exists, it is automatically migrated on first load. All patient persona database files (`*patients_db.json`), generated PDFs (`*.pdf`), and execution logs (`*.log`) are excluded from Git to protect patient data and prevent repository bloating.
+**Patient DB:** The database layer uses a storage repository abstraction (`PatientRepository`) supporting both local JSON files and PostgreSQL. By default, it uses the local JSON backend (`PATIENT_STORAGE_BACKEND=json`), saving data to `src/core/patients_db.json` (gitignored). If a legacy `core/patients_db.json` (gitignored) exists, it is automatically migrated on first load. Setting `PATIENT_STORAGE_BACKEND=postgres` routes database queries to PostgreSQL (fully implemented, index-optimized, and tested). All patient persona database files (`*patients_db.json`), generated PDFs (`*.pdf`), and execution logs (`*.log`) are excluded from Git to protect patient data and prevent repository bloating.
 **Feedback history:** Per-patient feedback/history is stored under `generated_output/logs/<ID - Name - CPT - Outcome>...`.
 
 ### Key Files to Customize
@@ -447,7 +470,7 @@ We have integrated full **Swagger OpenAPI documentation**. To explore the intera
 
 - The `cred/` folder is gitignored by default
 - Never commit API keys or service account files
-- Use `core/.env.example` to reconstruct your environment at `cred/.env`
+- Use `cred/.env.example` to reconstruct your environment at `cred/.env`
 
 ---
 
