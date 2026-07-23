@@ -605,9 +605,9 @@ The patient storage persistence layer uses a repository pattern decoupled from b
 - Toggle between backends using `PATIENT_STORAGE_BACKEND` env var: `'json'` (local file) or `'postgres'` (PostgreSQL database).
 - **PostgreSQL Schema**: Defined in `src/core/schema.sql`. Schema is initialized automatically via the repository (exactly once per instance via `_schema_initialized` guard). Uses indices on `last_name, first_name` and `dob` for deduplication/listing, and a GIN index on `persona_data` (JSONB) for robust querying.
 - **Migration Scripts**:
-  - `migrate_json_to_postgres.py` transfers JSON patient records to PostgreSQL.
-  - `migrate_postgres_to_json.py` reverse migrates PostgreSQL records to JSON.
-  - Both CLI scripts accept `--strategy` option (`skip`, `update`, `fail`) to resolve duplicate ID conflicts.
+  - `migrate_data.py` is the unified bidirectional migration CLI tool (supporting `json_to_db` and `db_to_json`) for `all`, `patients`, `insurance`, and `cpt` entities.
+  - Accepts `--strategy` option (`skip`, `update`, `fail`) to resolve duplicate ID conflicts.
+- **Strict Backend Selection**: Storage operations strictly execute on the configured `PATIENT_STORAGE_BACKEND` (`'json'` or `'postgres'`). No silent cross-backend fallback occurs: if PostgreSQL is unreachable in `'postgres'` mode, explicit database errors (HTTP 500) are returned. Complete feature parity is maintained in both `'json'` and `'postgres'` modes.
 - **Schema name validation**: `DB_SCHEMA` env var is validated against `^[a-zA-Z_][a-zA-Z0-9_]*$` on repository instantiation.
 - **All patient data operations** route through `src/core/patient_db.py` → `PatientRepository` → active backend. No module touches `patients_db.json` directly outside `json_repository.py`.
 

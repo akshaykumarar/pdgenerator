@@ -566,45 +566,33 @@ def api_patients():
         ids = data_loader.get_all_patient_ids()
         patient_names = {}
         for p_id in ids:
-            try:
-                name = patient_db.get_patient_name(p_id)
-            except Exception:
-                name = None
+            name = patient_db.get_patient_name(p_id)
             if name:
                 patient_names[p_id] = name
             else:
                 patient_names[p_id] = f"Patient {p_id}"
         return jsonify({"patients": ids, "patient_names": patient_names})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
+        backend = os.getenv("PATIENT_STORAGE_BACKEND", "json").strip().lower()
+        return jsonify({"error": f"Database Error [{backend} mode]: {str(e)}"}), 500
 
 
 @app.route("/api/patient/<patient_id>")
 def api_get_patient(patient_id: str):
     """Return the current DB record for a patient plus UAT case details."""
-    record = None
     try:
         record = patient_db.load_patient(patient_id)
-    except Exception:
-        record = None
-
-    # Enrich with case/UAT info from the Excel plan so the UI can show
-    # case type, expected outcome, CPT/ICD codes without a separate call.
-    case_details: dict | None = None
-    try:
         case_details = data_loader.get_case_details(patient_id)
-    except Exception:
-        pass
-
-    if record or case_details:
-        return jsonify({
-            "found": bool(record),
-            "data": record,
-            "case_details": case_details,
-        })
-    return jsonify({"found": False, "data": None, "case_details": None})
+        if record or case_details:
+            return jsonify({
+                "found": bool(record),
+                "data": record,
+                "case_details": case_details,
+            })
+        return jsonify({"found": False, "data": None, "case_details": None})
+    except Exception as e:
+        backend = os.getenv("PATIENT_STORAGE_BACKEND", "json").strip().lower()
+        return jsonify({"error": f"Database Error [{backend} mode]: {str(e)}"}), 500
 
 
 @app.route("/api/patient/<patient_id>", methods=["PUT"])

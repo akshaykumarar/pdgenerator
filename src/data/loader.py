@@ -107,20 +107,18 @@ def refresh_cpt_code_map() -> dict:
 def get_cpt_code_map() -> dict:
     backend = os.getenv("PATIENT_STORAGE_BACKEND", "json").strip().lower()
     if backend == "postgres":
-        try:
-            from core.postgres_repository import PostgresPatientRepository
-            db_map = PostgresPatientRepository().load_cpt_code_map()
-            if db_map and db_map.get("by_code"):
-                return db_map
-        except Exception:
-            pass
-
-    if os.path.exists(CPT_MAP_PATH):
-        try:
+        from core.postgres_repository import PostgresPatientRepository
+        db_map = PostgresPatientRepository().load_cpt_code_map()
+        if db_map and db_map.get("by_code"):
+            return db_map
+        if os.path.exists(CPT_MAP_PATH):
             with open(CPT_MAP_PATH, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except Exception:
-            return {}
+        return {}
+
+    if os.path.exists(CPT_MAP_PATH):
+        with open(CPT_MAP_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
     return {}
 
 
