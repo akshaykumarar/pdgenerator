@@ -20,7 +20,7 @@
 ### 3. Prior Authorization (PA) & Gap Injection
 - **PA Optimization Toggle**: Automatically adjusts clinical details to strengthen the medical justification, raising the approval probability score.
 - **Probabilistic Gap Injection System**: When case outcome is set to Denial/Rejection, the system applies a gap injection protocol. It samples 2–4 gap archetypes across 5 clinical dimensions (Profile-Behavior, Temporal-Sequence, Treatment-Escalation, Cross-Document, Policy-Criteria) to construct realistic, hard-to-detect inconsistencies without leaving blank fields.
-- **Medications as First-Class Targets**: Automatically intercepts J/Q-prefixed HCPC medication drug codes (e.g. `J0897`, `Q5124`) and routes them to specialized medication prompt structures (step-therapies, failed trials, and lab markers).
+- **Medications as First-Class Targets**: Automatically intercepts J/Q-prefixed HCPCS medication drug codes (e.g. `J0897`, `Q5124`) and routes them to specialized medication prompt structures and document plans. Supports 11-digit NDC codes (`XXXXX-XXXX-XX`), exact dosage/route/frequency, days supply, step therapy failure logs (`step_therapy_failed_agents`), baseline lab reports, and conditional infusion order protocol sheets.
 - **Supporting Documents Cap**: Intelligently caps supporting documents (e.g., radiology/specialist consults) to a maximum of 5, preserving core documents (PA Requests and Summaries).
 
 ### 4. Patient Tracker CSV Exporter
@@ -31,6 +31,7 @@
 ### 5. Visual Scan Simulation Filter
 - **Rasterized Image Filter**: Flat-renders vector PDFs to flat, image-only documents using `PyMuPDF` (`fitz`), Pillow, and NumPy, making them look physically scanned.
 - **Adjustable Degradation Artifacts**: Features Light, Medium, and Heavy presets simulating feeding skews, sensor noise, light gradient shadows, lens blur, dust speckles, and aged paper tints.
+- **Summary Document Exclusion**: Summary documents (`Clinical_Summary_Patient_*.pdf`) are automatically excluded from scan filtering, keeping clinical summaries as clean digital vector PDFs.
 
 ### 6. Concise Clinical Summary
 - Generates a 5-part summary for case evaluators:

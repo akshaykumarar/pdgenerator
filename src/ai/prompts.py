@@ -286,11 +286,12 @@ def get_clinical_data_prompt(case_details: dict, patient_state: dict, document_p
           - **MEDICATION / THERAPY GENERATION GUIDELINES (MANDATORY)**:
             If the requested service is a medication (e.g. infusion, injection, formulary drug):
             * **Terminology**: Note that 'procedure' in this context refers to the drug administration, infusion, or injection itself.
+            * **NDC & HCPCS Coding**: Provide a valid 11-digit National Drug Code (`ndc_code` in `XXXXX-XXXX-XX` format e.g. `00006-0272-01`) and HCPCS drug code (`hcpcs_code` e.g. `J0897`, `Q5124`) in `pa_request` and `medications` entries.
+            * **Dosing, Route & Frequency**: Specify exact dose strength, administration route (`administration_route` e.g. `Subcutaneous`, `Intravenous Infusion`, `Oral`), dosing frequency (`dosing_frequency` e.g. `Every 4 weeks`, `Once daily`), quantity, and days supply (`days_supply`).
             * **Indication & Diagnosis**: Clearly specify the FDA-approved or clinically accepted indication and active diagnosis (with matching ICD-10 code).
-            * **Failed Prior Therapies**: Detail the exact names, dosages, durations, and outcomes of failed prior therapies (e.g., "Patient tried [Formulary Drug A] for 8 weeks with no response").
-            * **Contraindications / Intolerances**: Explicitly document any contraindications or intolerances to first-line/formulary drugs (e.g., "Patient experienced severe gastrointestinal distress on [Alternative Drug]").
-            * **Dosing & Duration**: Clearly state the requested dosage, frequency of administration, and anticipated duration of treatment.
-            * **Monitoring Labs**: Include baseline and regular monitoring laboratory/diagnostic tests (e.g., liver function tests, renal panels, CBC) with dates and results.
+            * **Step Therapy & Failed Prior Therapies**: Detail exact names, NDC/HCPCS codes, dosages, treatment durations, and specific failure/intolerance reasons for failed prior preferred drugs (`step_therapy_failed_agents` array e.g., ["Patient tried Methotrexate 15mg weekly for 12 weeks with inadequate response", "Patient failed Adalimumab due to injection site reaction"]).
+            * **Contraindications / Intolerances**: Explicitly document any contraindications or intolerances to first-line/formulary drugs.
+            * **Baseline & Monitoring Labs**: Include baseline safety and monitoring laboratory/diagnostic tests (e.g., QuantiFERON-TB Gold, Hepatitis B panel, LFTs, renal function, CBC) with dates and exact laboratory values.
             * **Step Therapy/Formulary Rationale**: Provide explicit step-therapy or formulary exception justifications explaining why non-preferred agents are required, referencing specific formulary tiers and exception criteria.
             * **Encounter Patterns**: Encounters should include medication-specific patterns such as outpatient infusion center visits, pharmacy counseling notes, or specialist medication reviews.
           - **Example — MINIMAL (bad)**: findings: "No acute findings."

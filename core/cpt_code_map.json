@@ -114,6 +114,26 @@
       "procedure": "Ozempic (semaglutide) injection",
       "department": "Endocrinology",
       "test_case": "Patient 17"
+    },
+    "E1086": {
+      "procedure": "Wheelchair Component / Power Mobility Equipment",
+      "department": "Durable Medical Equipment (DME)",
+      "test_case": "Patient 8"
+    },
+    "E0218": {
+      "procedure": "Home Heat Therapy Device",
+      "department": "Durable Medical Equipment (DME)",
+      "test_case": "Patient 9"
+    },
+    "V5261": {
+      "procedure": "Hearing Aid Fitting",
+      "department": "Audiology",
+      "test_case": "Patient 10"
+    },
+    "Q3001": {
+      "procedure": "Genetic Evaluation Service",
+      "department": "Genetics",
+      "test_case": "Patient 11"
     }
   },
   "by_procedure": {
@@ -142,7 +162,11 @@
     "ozempic (semaglutide) injection": "J3490",
     "jardiance (empagliflozin) tablet": "J3490",
     "kerendia (finerenone) tablet": "J3490",
-    "tarpeyo (budesonide delayed release) capsule": "J3490"
+    "tarpeyo (budesonide delayed release) capsule": "J3490",
+    "wheelchair component / power mobility equipment": "E1086",
+    "home heat therapy device": "E0218",
+    "hearing aid fitting": "V5261",
+    "genetic evaluation service": "Q3001"
   },
-  "updated_at": "2026-07-21T14:57:07.561549"
+  "updated_at": "2026-07-22T14:03:02.312916"
 }

@@ -34,11 +34,17 @@ class PARequestDetails(BaseModel):
     """Prior Authorization Request Form Details"""
     requesting_provider: str = Field(..., description="Name and credentials of requesting physician (e.g., 'Dr. John Smith, MD, FACC')")
     urgency_level: str = Field(..., description="Routine, Urgent, or Emergency")
-    clinical_justification: str = Field(..., description="Medical necessity explanation (2-3 sentences explaining why procedure is needed)")
+    clinical_justification: str = Field(..., description="Medical necessity explanation (2-3 sentences explaining why procedure/medication is needed)")
     supporting_diagnoses: List[str] = Field(..., description="ICD-10 codes with descriptions supporting the request (e.g., ['I25.10 - Atherosclerotic heart disease'])")
     previous_treatments: str = Field(default="None", description="Prior treatments attempted, if any")
     expected_outcome: str = Field(..., description="Expected clinical outcome (e.g., 'Improved cardiac function', 'Pain relief')")
     units_requested: str = Field(default="1", description="Number of units/sessions/procedures requested. E.g. '1', '12 sessions'")
+    ndc_code: Optional[str] = Field(None, description="11-digit National Drug Code e.g. '00006-0272-01' (applicable for medications)")
+    hcpcs_code: Optional[str] = Field(None, description="HCPCS drug code e.g. 'J0897', 'Q5124' (applicable for medication/infusion PA)")
+    administration_route: Optional[str] = Field(None, description="Route e.g. 'Subcutaneous', 'Intravenous Infusion', 'Oral'")
+    dosing_frequency: Optional[str] = Field(None, description="Frequency e.g. 'Every 4 weeks', 'Once daily'")
+    days_supply: Optional[str] = Field(None, description="Days supply e.g. '30 days', '84 days'")
+    step_therapy_failed_agents: List[str] = Field(default_factory=list, description="List of previously attempted and failed medication agents with failure reasons for step-therapy validation")
 
 class PatientCommunication(BaseModel):
     """Patient communication preferences."""
@@ -70,6 +76,12 @@ class MedicationEntry(BaseModel):
     start_date: str = Field(..., description="Start date MM-DD-YYYY")
     end_date: str = Field("ongoing", description="End date MM-DD-YYYY or 'ongoing'")
     reason: str = Field(..., description="Clinical reason/indication for this medication")
+    ndc_code: Optional[str] = Field(None, description="11-digit NDC code e.g. '00006-0272-01'")
+    hcpcs_code: Optional[str] = Field(None, description="HCPCS J/Q code e.g. 'J0897'")
+    route: Optional[str] = Field(None, description="Administration route e.g. 'Subcutaneous', 'Oral', 'IV Infusion'")
+    frequency: Optional[str] = Field(None, description="Frequency e.g. 'Once daily', 'Q4W'")
+    days_supply: Optional[str] = Field(None, description="Days supply e.g. '30 days', '90 days'")
+    refills: Optional[str] = Field(None, description="Refills authorized e.g. '3', '0'")
 
 
 class AllergyEntry(BaseModel):

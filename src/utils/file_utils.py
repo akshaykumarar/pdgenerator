@@ -187,3 +187,34 @@ def sanitize_filename_component(name: str) -> str:
     name = re.sub(r'[<>:"|?*]+', "-", name)
     name = re.sub(r"\s+", " ", name).strip()
     return name
+
+def is_summary_pdf(path: str) -> bool:
+    """
+    Check if a given PDF path corresponds to a summary document.
+    
+    Summary documents are identified by being stored in the dedicated 'summary' folder
+    or by matching summary filename prefixes (e.g. Clinical_Summary, Annotator_Summary, Concise_Summary).
+    """
+    if not path:
+        return False
+    norm_path = os.path.normpath(path)
+    base_name = os.path.basename(norm_path)
+    dir_name = os.path.basename(os.path.dirname(norm_path)).lower()
+
+    if dir_name == "summary":
+        return True
+
+    base_lower = base_name.lower()
+    summary_prefixes = (
+        "clinical_summary",
+        "annotator_summary",
+        "concise_summary",
+        "summary_"
+    )
+    if any(base_lower.startswith(prefix) for prefix in summary_prefixes):
+        return True
+    if "summary" in base_lower and not base_lower.startswith("doc-"):
+        return True
+
+    return False
+

@@ -85,15 +85,26 @@ def detect_case_type(procedure_string: str, cpt_code: str = "") -> str:
     # Default
     return "diagnostic"
 
-def select_document_plan(case_type: str) -> List[str]:
+def select_document_plan(case_type: str, procedure_string: str = "") -> List[str]:
     """
     Loads templates/document_plan_rules.json and returns a list of template filenames
     for the specified case_type, capping supporting documents to MAX_SUPPORTING_DOCUMENTS = 5.
+    For 'medication' cases, infusion_order_template.json is conditionally attached ONLY when
+    the procedure/medication string indicates an infusion/injection drug.
     """
     rules = load_rules()
     templates = []
     if case_type in rules:
-        templates = rules[case_type].get("templates", [])
+        templates = list(rules[case_type].get("templates", []))
+        
+        # Check conditional templates for medication
+        if case_type == "medication" and procedure_string:
+            if re.search(r"\b(infusion|injection|iv|subcutaneous|sc|drip)\b", str(procedure_string), re.IGNORECASE):
+                conditionals = rules[case_type].get("conditional_templates", [])
+                for cond in conditionals:
+                    if cond not in templates:
+                        insert_idx = len(templates) - 1 if templates and "summary" in templates[-1] else len(templates)
+                        templates.insert(insert_idx, cond)
     else:
         # Fallback default plan
         templates = ["prior_auth_request_template.json", "summary_template.json"]
@@ -120,14 +131,13 @@ def select_document_plan(case_type: str) -> List[str]:
     return core_before + capped_supporting + core_after
 
 def create_and_save_document_plan(patient_id: str, case_data: Dict) -> Dict:
-
     """
     Orchestration wrapper that detects case type, loads the plan templates,
     and writes out the debug plan representation.
     """
     procedure = case_data.get("procedure", "")
     case_type = detect_case_type(procedure, cpt_code=case_data.get("cpt_code", ""))
-    templates = select_document_plan(case_type)
+    templates = select_document_plan(case_type, procedure_string=procedure)
     
     plan = {
         "case_type": case_type,
