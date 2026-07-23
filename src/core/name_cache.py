@@ -84,3 +84,29 @@ def update_entry(patient_id: str, name: str) -> None:
                 json.dump({"names": current}, f, indent=2)
         except Exception as e:
             print(f"[WARNING] name_cache: Failed to update entry for {patient_id}: {e}")
+
+
+def remove_entries(patient_ids: list[str]) -> None:
+    """
+    Remove patient entries from the cache (read-modify-write, thread-safe).
+    Call this whenever patients are purged so they are removed from the cache.
+
+    Args:
+        patient_ids: List of numeric string patient IDs to remove.
+    """
+    with _lock:
+        current: Dict[str, str] = {}
+        try:
+            if os.path.exists(CACHE_PATH):
+                with open(CACHE_PATH, "r", encoding="utf-8") as f:
+                    current = json.load(f).get("names", {})
+        except Exception:
+            pass
+        for pid in patient_ids:
+            current.pop(pid, None)
+        try:
+            with open(CACHE_PATH, "w", encoding="utf-8") as f:
+                json.dump({"names": current}, f, indent=2)
+        except Exception as e:
+            print(f"[WARNING] name_cache: Failed to remove entries: {e}")
+

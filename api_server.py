@@ -1143,6 +1143,93 @@ def api_download_file(patient_id: str, file_type: str, filename: str):
     return send_from_directory(directory, filename, mimetype='application/pdf', as_attachment=False)
 
 
+@app.route("/api/patient_tracker_export", methods=["POST"])
+def api_patient_tracker_export():
+    """
+    Generate a prior authorization patient tracker CSV.
+    Returns the CSV as a direct download attachment.
+    """
+    try:
+        data = request.get_json() or {}
+        patient_ids = data.get("patient_ids", [])
+        if not patient_ids:
+            return jsonify({"error": "No patient IDs provided"}), 400
+            
+        normalized_ids = []
+        for p_id in patient_ids:
+            clean_id = str(p_id).strip()
+            clean_id = "".join(c for c in clean_id if c.isalnum() or c in "-_")
+            if clean_id:
+                normalized_ids.append(clean_id)
+                
+        if not normalized_ids:
+            return jsonify({"error": "No valid patient IDs found"}), 400
+            
+        from src.doc_generation.patient_tracker_export import generate_tracker_export
+        csv_path = generate_tracker_export(normalized_ids)
+        
+        if not os.path.exists(csv_path):
+            return jsonify({"error": "Failed to generate export file"}), 500
+            
+        directory = os.path.dirname(csv_path)
+        filename = os.path.basename(csv_path)
+        
+        return send_from_directory(
+            directory,
+            filename,
+            as_attachment=True,
+            download_name="patient_tracker_export.csv",
+            mimetype="text/csv"
+        )
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/purge", methods=["POST"])
+def api_purge():
+    """
+    Purge specific databases or generated files
+    """
+    from src.utils import purge_manager
+    body = request.get_json(force=True) or {}
+    target = body.get("target")
+
+    try:
+        if target == "all":
+            purge_manager.purge_all(force=True)
+        elif target == "personas":
+            purge_manager.purge_personas(force=True)
+        elif target == "documents":
+            purge_manager.purge_documents(force=True)
+        elif target == "summaries_only":
+            purge_manager.purge_summaries_only(force=True)
+        elif target == "reports_only":
+            purge_manager.purge_reports_only(force=True)
+        elif target == "patient":
+            patient_ids = body.get("patient_ids", [])
+            if not patient_ids:
+                p_id = body.get("patient_id")
+                if not p_id:
+                    return jsonify({"error": "patient_id or patient_ids required"}), 400
+                patient_ids.append(p_id)
+            
+            mode = body.get("mode", "delete")
+            targets = body.get("targets")
+
+            for p_id in patient_ids:
+                if targets:
+                    purge_manager.purge_patient_selective(p_id, targets, mode=mode, force=True)
+                else:
+                    purge_manager.purge_patient(p_id, force=True)
+        else:
+            return jsonify({"error": "Invalid target"}), 400
+            
+        return jsonify({"ok": True, "message": f"Purged {target} successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/template/save", methods=["POST"])
 def api_save_template():
     """
