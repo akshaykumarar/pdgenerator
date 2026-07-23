@@ -23,7 +23,13 @@ from .core.config import (
     get_patient_records_folder,
     MAX_SUPPORTING_DOCUMENTS,
 )
-from .utils.file_utils import get_latest_major_version, get_document_minor_version, archive_patient_files, sanitize_filename_component
+from .utils.file_utils import (
+    get_latest_major_version,
+    get_document_minor_version,
+    archive_patient_files,
+    sanitize_filename_component,
+    is_summary_pdf,
+)
 
 
 def _is_policy_criteria_doc(doc) -> bool:
@@ -735,6 +741,9 @@ def process_patient_workflow(
         from .doc_generation.scan_filter import apply_scan_filter
         for path in written_pdf_paths:
             if path and os.path.exists(path):
+                if is_summary_pdf(path):
+                    print(f"   ⏭️  Skipping scan filter for summary document: {os.path.basename(path)}")
+                    continue
                 try:
                     apply_scan_filter(path, intensity=intensity)
                     print(f"   Scan filter applied to: {os.path.basename(path)}")
@@ -1129,6 +1138,9 @@ def render_patient_pdfs_from_content(
         from .doc_generation.scan_filter import apply_scan_filter
         for path in written_pdf_paths:
             if path and os.path.exists(path):
+                if is_summary_pdf(path):
+                    print(f"   ⏭️  Skipping scan filter for summary document: {os.path.basename(path)}")
+                    continue
                 try:
                     apply_scan_filter(path, intensity=intensity)
                     print(f"   Scan filter applied to: {os.path.basename(path)}")

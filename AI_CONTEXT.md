@@ -494,6 +494,15 @@ Workflow continues gracefully.
 
 # Maintenance & Updates
 
+### v8.6 Summary PDF Exclusion from Scan Filter (2026-07-23)
+* **Summary PDF Exclusion**: Updated workflow processing (`src/workflow.py` and `src/utils/file_utils.py`) to exclude summary documents (`Clinical_Summary_Patient_*.pdf`) from post-processing scan filter rasterization when `scan_mode` (realistic document setting) is enabled. Summary documents remain clean vector PDFs for verification while clinical reports and personas receive scan simulation.
+
+### v8.5 Medicine PA Logic & Document Structure (2026-07-23)
+* **Medicine-Specific Data Models**: Extended `PARequestDetails` and `MedicationEntry` in `src/ai/models.py` with 11-digit NDC codes (`ndc_code`), HCPCS drug codes (`hcpcs_code`), administration route, dosing frequency, days supply, refills, and `step_therapy_failed_agents`.
+* **Conditional Infusion Order Templates**: Updated `templates/document_plan_rules.json` and `src/doc_generation/planner.py` to route `medication` case types strictly to medicine-specific supporting documents (consult notes, medication history logs, baseline lab reports) and conditionally attach `infusion_order_template.json` only when clinically indicated for provider-administered/infusion drugs.
+* **Prompt & Record Output Alignment**: Updated `src/ai/prompts.py` to enforce 11-digit NDC formatting (`XXXXX-XXXX-XX`), step therapy failure rationales, and baseline safety lab findings. Updated `src/data/patient_record_writer.py` to format NDC, HCPCS, route, frequency, and step therapy failure logs in human-readable patient records.
+* **Testing Integrity**: Added `tests/test_medicine_logic.py` verifying data models, planner conditional template logic, and patient record text output.
+
 ### v8.0 Non-AI Scanned PDF Look & CPT Fixes (2026-06-04)
 * **Scan/Non-AI-Friendly Toggle**: Added a post-processing visual scan filter (`src/doc_generation/scan_filter.py`) using fitz (PyMuPDF), Pillow, and NumPy. Converts clean vector PDFs to flat, image-only scanned documents with configurable skews, noise, brightness shadows, and dust/speckle artifacts (Light, Medium, Heavy presets). Fully integrated in `/api/generate`, `/api/generate_from_content`, `/api/generate_all` and the web UI.
 * **CPT Code Naming & Low ID Fix**: Resolved the "Unknown" CPT folder naming bug by passing both `CPT Code` and `Code` Excel columns during extraction, and adding fallback resolution to `cpt_code_map.json` by matching procedure names. Lowered patient ID heuristic threshold to `>= 1` to correctly parse low-numeric patient IDs (e.g. 1-99).
