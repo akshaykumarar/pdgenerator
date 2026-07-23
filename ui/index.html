@@ -163,6 +163,20 @@
       class="px-3 py-1 bg-white/20 rounded shadow-sm hover:bg-white/40 transition-colors">Refresh Connection</button>
   </div>
 
+  <!-- ═══ DB ERROR BANNER ══════════════════════════════════════════════════════ -->
+  <div id="db-error-banner"
+    class="hidden absolute inset-x-0 top-0 min-h-10 py-2 px-6 bg-red-700 text-white text-xs font-bold items-center justify-between gap-4 z-[998] shadow-lg border-b border-red-800 animate-pulse">
+    <div class="flex items-center gap-2 truncate">
+      <span class="material-symbols-outlined text-sm shrink-0">database_off</span>
+      <span id="db-error-text" class="truncate font-mono">Database Connection Error</span>
+    </div>
+    <div class="flex items-center gap-2 shrink-0">
+      <button onclick="checkServer()"
+        class="px-3 py-1 bg-white/20 rounded shadow-sm hover:bg-white/40 transition-colors text-[10px] font-black uppercase tracking-wider">Retry Connection</button>
+      <button onclick="hideDbErrorBanner()" class="hover:opacity-75"><span class="material-symbols-outlined text-sm">close</span></button>
+    </div>
+  </div>
+
   <!-- ═══ HEADER ════════════════════════════════════════════════════════ -->
   <header class="h-12 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0 z-50">
     <div class="flex items-center gap-5">
@@ -174,6 +188,9 @@
       <div class="w-px h-5 bg-gray-200"></div>
       <div id="server-dot" class="w-2 h-2 rounded-full bg-gray-300" title="API status"></div>
       <span id="server-label" class="text-[10px] font-mono text-gray-400 uppercase">Checking…</span>
+      <div class="w-px h-5 bg-gray-200"></div>
+      <div id="db-dot" class="w-2 h-2 rounded-full bg-gray-300" title="DB status"></div>
+      <span id="db-label" class="text-[10px] font-mono text-gray-400 uppercase">DB Checking…</span>
     </div>
     <div class="flex items-center gap-3">
       <button onclick="openBatchModal()" title="Run batch generation for multiple patients"
@@ -612,7 +629,7 @@
   <!-- ═══ JAVASCRIPT ═══════════════════════════════════════════════════ -->
   <script>
     const API = 'http://localhost:410';
-    let currentPatientId = null, currentPatientData = null, allFiles = [], activeDocTab = 'all', activeClinicalTab = 'meds';
+    let currentPatientId = null, currentPatientData = null, currentCaseDetails = null, allFiles = [], activeDocTab = 'all', activeClinicalTab = 'meds';
     let currentJobId = null, pollTimer = null, logOffset = 0, allPatientIds = [], batchSelectAll = true, trackerSelectAll = true, batchPurgeSelectAll = true;
     let insuranceConfig = null;
     let patientNames = {};
@@ -682,16 +699,48 @@
       }
     }
 
+    function showDbErrorBanner(msg) {
+      const banner = document.getElementById('db-error-banner');
+      const text = document.getElementById('db-error-text');
+      if (text) text.textContent = msg || 'Database Connection Error';
+      if (banner) {
+        banner.classList.remove('hidden');
+        banner.classList.add('flex');
+      }
+    }
+
+    function hideDbErrorBanner() {
+      const banner = document.getElementById('db-error-banner');
+      if (banner) {
+        banner.classList.add('hidden');
+        banner.classList.remove('flex');
+      }
+    }
+
     async function checkServer() {
       const dot = document.getElementById('server-dot'), lbl = document.getElementById('server-label');
+      const dbDot = document.getElementById('db-dot'), dbLbl = document.getElementById('db-label');
       try {
         const r = await fetch(`${API}/api/status`);
         if (r.ok) {
+          const d = await r.json();
           dot.style.background = '#16a34a'; lbl.textContent = 'API Online';
           setOnlineState(true);
+
+          if (d.db_status === 'ok') {
+            if (dbDot) dbDot.style.background = '#16a34a';
+            if (dbLbl) dbLbl.textContent = (d.storage_backend === 'postgres' ? 'DB Online (PG)' : 'DB Online (JSON)');
+            hideDbErrorBanner();
+          } else {
+            if (dbDot) dbDot.style.background = '#ef4444';
+            if (dbLbl) dbLbl.textContent = (d.storage_backend === 'postgres' ? 'DB Error (PG)' : 'DB Error');
+            showDbErrorBanner(`Database Error [${d.storage_backend || 'postgres'} mode]: ${d.db_error || 'Connection failed/timed out'}`);
+          }
         } else throw new Error();
       } catch (_) {
         dot.style.background = '#ef4444'; lbl.textContent = 'API Offline';
+        if (dbDot) dbDot.style.background = '#9ca3af';
+        if (dbLbl) dbLbl.textContent = 'DB Unknown';
         setOnlineState(false);
       }
     }
@@ -716,11 +765,15 @@
     async function onPatientChange() {
       currentPatientId = document.getElementById('patient-select').value;
       currentPatientData = null;
+      currentCaseDetails = null;
       if (!currentPatientId) { clearDossier(); setDocList([]); return; }
       try {
         const r = await fetch(`${API}/api/patient/${currentPatientId}`); const d = await r.json();
-        currentPatientData = d.data; populateIdentity(d.data, d.case_details); populateCaseInfo(d.case_details);
-        populateInsuranceSelectors(d.data || {});
+        currentPatientData = d.data || null;
+        currentCaseDetails = d.case_details || null;
+        populateIdentity(currentPatientData, currentCaseDetails);
+        populateCaseInfo(currentCaseDetails);
+        populateInsuranceSelectors(currentPatientData || {});
       }
       catch (e) { console.error(e); clearDossier(); }
       switchClinicalTab(activeClinicalTab);
@@ -881,10 +934,10 @@
     }
 
     function populateIdentity(p, c) {
-      if (!p) { clearDossier(); return; }
-      const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.name || '—';
+      if (!p && !c) { clearDossier(); return; }
+      const fullName = p ? ([p.first_name, p.last_name].filter(Boolean).join(' ') || p.name || '—') : (c?.patient_name || (currentPatientId ? 'Patient ' + currentPatientId : '—'));
       const year = new Date().getFullYear();
-      const mrn = p.mrn || (p.identifiers && p.identifiers.mrn) || (currentPatientId ? `MRN-${currentPatientId}-${year}` : '—');
+      const mrn = p ? (p.mrn || (p.identifiers && p.identifiers.mrn) || (currentPatientId ? `MRN-${currentPatientId}-${year}` : '—')) : (currentPatientId ? `MRN-${currentPatientId}-${year}` : '—');
       document.getElementById('info-name').textContent = fullName;
       document.getElementById('info-mrn').textContent = mrn;
       if (c) {
@@ -893,10 +946,10 @@
       } else {
         document.getElementById('info-cpt').textContent = '—';
       }
-      document.getElementById('info-dob').textContent = get(p, 'dob') || get(p, 'demographics', 'dob') || '—';
-      document.getElementById('info-gender').textContent = p.gender || '—';
+      document.getElementById('info-dob').textContent = (p ? (get(p, 'dob') || get(p, 'demographics', 'dob')) : c?.dob) || '—';
+      document.getElementById('info-gender').textContent = (p ? p.gender : c?.gender) || '—';
       updateProviderDisplay(p);
-      document.getElementById('info-dx').textContent = (p.diagnoses && p.diagnoses[0] && (p.diagnoses[0].condition || p.diagnoses[0].code)) || '—';
+      document.getElementById('info-dx').textContent = (p && p.diagnoses && p.diagnoses[0] && (p.diagnoses[0].condition || p.diagnoses[0].code)) || (c?.details || '—');
       document.getElementById('info-summary').textContent = buildClinicalSummary(p, c);
     }
 
@@ -944,10 +997,26 @@
     function renderClinicalTab(tab) {
       const el = document.getElementById('clinical-content');
       const p = currentPatientData;
-      if (!p) { el.innerHTML = '<p class="text-gray-400 italic text-sm">Select a patient…</p>'; return; }
+      const c = currentCaseDetails;
+      if (!p && !c) { el.innerHTML = '<p class="text-gray-400 italic text-sm">Select a patient…</p>'; return; }
 
       const card = (inner) => `<div class="card rounded mb-2 p-4">${inner}</div>`;
       const pill = (txt, green) => `<span class="text-[9px] font-bold px-2 py-0.5 rounded border ${green ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 bg-gray-50 text-gray-600'}">${txt}</span>`;
+
+      if (!p && c) {
+        el.innerHTML = card(`
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <div class="font-bold text-xs">${c.procedure || 'Procedure Requested'}</div>
+              <div class="text-[10px] font-mono text-gray-500 mt-0.5">CPT ${c.cpt_code || '—'} · ${c.department || '—'}</div>
+            </div>
+            ${pill(c.outcome || 'Pending', (c.outcome || '').toLowerCase().includes('approval'))}
+          </div>
+          <div class="text-[11px] text-gray-600 leading-relaxed mt-2">${c.details || 'No case details provided.'}</div>
+          <div class="text-[9px] text-gray-400 italic mt-3 pt-2 border-t border-gray-100">Click <strong>Generate</strong> in the right panel to generate the synthetic clinical documents and full patient persona.</div>
+        `);
+        return;
+      }
 
       const renderers = {
         meds: () => {

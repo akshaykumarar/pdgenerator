@@ -504,9 +504,9 @@ Workflow continues gracefully.
 ### v8.2 Database Architecture & Cleanup (2026-07-23)
 * **Expanded PostgreSQL Schema**: Added DDL tables for `insurance_providers`, `insurance_plans`, and `cpt_code_map` with B-tree and unique indexes (`src/core/schema.sql`).
 * **PostgreSQL Repository Methods**: Implemented `load_insurance_config()`, `save_insurance_config()`, `load_cpt_code_map()`, and `save_cpt_code_map()` in `src/core/postgres_repository.py`.
-* **Unified Bidirectional Migration**: Created single CLI script `migrate_data.py` supporting bidirectional sync (`json_to_db` and `db_to_json`) for `all`, `patients`, `insurance`, and `cpt` entities with `--strategy update|skip|fail`. Deleted legacy scripts `migrate_json_to_postgres.py` and `migrate_postgres_to_json.py`.
+* **Unified Bidirectional Migration**: Created single CLI script `migrate_data.py` supporting bidirectional sync (`json_to_db` and `db_to_json`) for `all`, `patients`, `insurance`, and `cpt` entities with `--strategy update|skip|fail`. Successfully executed migration into PostgreSQL schema `n8n` (73 patients, 5 insurance providers, 14 insurance plans, 27 CPT mappings).
+* **DB Error Banner & Health Check**: Updated `/api/status` endpoint in `api_server.py` to test active database connection. Added animated red top ribbon error banner (`#db-error-banner`) and DB status indicator dot (`#db-dot`) in `ui/index.html` to alert the user of connection errors, timeouts, or authentication failures.
 * **Redundant Code & UI Cleanup**: Removed legacy `src/doc_generation/patient_tracker_export.py`, `@app.route("/api/patient_tracker_export")`, `@app.route("/api/purge")`, and associated HTML/JS elements for Batch Purge and Tracker Export in `ui/index.html`.
-* **Defensive API Error Handling**: Enhanced `/api/patients` and `/api/patient/<patient_id>` in `api_server.py` with try/except wrappers to handle database network failures gracefully without returning HTTP 500 errors.
 
 ### v7.0 Prior Authorization Tracker CSV Export Transition (2026-05-22)
 * **High-Fidelity CSV Exporter**: Replaced the ReportLab landscape PDF and companion TSV with a single, premium standard CSV file (`patient_tracker_export.csv`) located directly inside `generated_output/patient-data/`.

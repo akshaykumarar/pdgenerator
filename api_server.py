@@ -540,15 +540,36 @@ def _run_generation_from_content(job_id: str, patient_id: str, generation_mode: 
 @app.route("/api/status")
 def api_status():
     """
-    Health check.
+    Health check including database status.
     ---
     tags:
       - System
     responses:
       200:
-        description: Returns server online status
+        description: Returns server online status and DB health status
     """
-    return jsonify({"ok": True, "timestamp": datetime.now().isoformat()})
+    backend = os.getenv("PATIENT_STORAGE_BACKEND", "json").strip().lower()
+    db_status = "ok"
+    db_error = None
+    try:
+        if backend == "postgres":
+            from src.core.postgres_repository import PostgresPatientRepository
+            repo = PostgresPatientRepository()
+            conn = repo._connect()
+            conn.close()
+        else:
+            patient_db.list_patient_ids()
+    except Exception as e:
+        db_status = "error"
+        db_error = str(e)
+
+    return jsonify({
+        "ok": True,
+        "timestamp": datetime.now().isoformat(),
+        "storage_backend": backend,
+        "db_status": db_status,
+        "db_error": db_error,
+    })
 
 
 @app.route("/api/patients")
