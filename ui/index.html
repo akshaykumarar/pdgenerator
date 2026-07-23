@@ -185,6 +185,10 @@
         style="background: #1A365D; border-color: #1A365D; color: white;">
         <span class="material-symbols-outlined text-sm">download</span> Tracker Export
       </button>
+      <button onclick="openBatchPurgeModal()" title="Purge data for multiple patients"
+        class="flex items-center gap-1.5 px-3 py-1.5 border border-red-500 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">
+        <span class="material-symbols-outlined text-sm">delete</span> Batch Purge
+      </button>
       <img alt="User" class="w-7 h-7 rounded-full border border-gray-200 grayscale"
         src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTDu4MOuMOs0W6jTWPV71zpxHjMy44pi5CSqXnvyMi0CthsHHHGye33MnLt-4CABhybyhfOv5AfJZrfS-7__iytpf2mV6buuCUcSEtZgFFrFjJIQL-OBSJLlKWPDN_tuM9ULtNJ1UoDgIlE8tPtApQs_sTUfPKjKHa1J409OwjQSJT5zxsfiLnztGjib9og5dWmAAH6tANmnkuLdbaUO4n6IF_qD3KPp6b3AeFJzchNg-XKLW5S_DtSoNK1nWiZMxn62-mdnM1kTY" />
     </div>
@@ -680,6 +684,69 @@
     </div>
   </div>
 
+  <!-- ═══ BATCH PURGE MODAL ══════════════════════════════════════════════════ -->
+  <div id="batch-purge-modal"
+    class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center">
+    <div class="bg-white border border-gray-200 w-[500px] max-h-[80vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="p-5 border-b border-gray-200 flex justify-between items-center shrink-0">
+        <div>
+          <h2 class="font-black text-sm">Batch Purge Patient Data</h2>
+          <p class="text-xs text-gray-500 mt-0.5">Select patients and what to delete or archive</p>
+        </div>
+        <button onclick="closeBatchPurgeModal()"><span class="material-symbols-outlined text-gray-500">close</span></button>
+      </div>
+      <div class="p-4 space-y-4 border-b border-gray-200">
+        <div class="grid grid-cols-3 gap-2 text-xs">
+          <label class="flex items-center gap-2"><input type="checkbox" id="batch-purge-persona" checked class="lg-chk">
+            Persona PDFs</label>
+          <label class="flex items-center gap-2"><input type="checkbox" id="batch-purge-reports" checked class="lg-chk">
+            Reports</label>
+          <label class="flex items-center gap-2"><input type="checkbox" id="batch-purge-summary" checked class="lg-chk">
+            Summary</label>
+          <label class="flex items-center gap-2"><input type="checkbox" id="batch-purge-logs" checked class="lg-chk">
+            Logs</label>
+          <label class="flex items-center gap-2"><input type="checkbox" id="batch-purge-db" class="lg-chk"> Patient
+            DB</label>
+          <label class="flex items-center gap-2"><input type="checkbox" id="batch-purge-records" class="lg-chk">
+            Records</label>
+          <label class="flex items-center gap-2"><input type="checkbox" id="batch-purge-debug" class="lg-chk"> Debug
+            State</label>
+        </div>
+        <div class="bg-gray-50 border border-gray-200 p-3 rounded text-xs">
+          <div class="text-[9px] uppercase tracking-widest text-gray-400 mb-2">Action</div>
+          <label class="flex items-center gap-2"><input type="radio" name="batch-purge-mode" value="delete" checked
+              class="lg-chk"> Delete</label>
+          <label class="flex items-center gap-2 mt-1"><input type="radio" name="batch-purge-mode" value="archive"
+              class="lg-chk"> Archive</label>
+        </div>
+      </div>
+      <div class="p-4 border-b border-gray-100 flex justify-between items-center shrink-0">
+        <span class="text-xs font-bold text-gray-700">Patient List</span>
+        <button onclick="toggleBatchPurgeSelectAll()" class="text-[10px] text-gray-500 underline">Deselect All</button>
+      </div>
+      <div class="flex-1 overflow-y-auto custom-scrollbar p-4">
+        <table class="w-full text-xs border-collapse">
+          <thead>
+            <tr class="text-[9px] text-gray-400 uppercase tracking-wider border-b border-gray-200">
+              <th class="pb-2 text-left font-bold w-10">Select</th>
+              <th class="pb-2 text-left font-bold">Patient ID</th>
+              <th class="pb-2 text-left font-bold">Patient Name</th>
+            </tr>
+          </thead>
+          <tbody id="batch-purge-patient-rows" class="divide-y divide-gray-100">
+            <tr><td colspan="3" class="py-3 text-gray-400 text-[11px] italic">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="p-4 border-t border-gray-200 flex gap-3 shrink-0">
+        <button onclick="closeBatchPurgeModal()"
+          class="flex-1 py-2 border border-gray-300 text-xs font-bold hover:bg-gray-50 transition-colors">Cancel</button>
+        <button onclick="startBatchPurge()"
+          class="flex-1 py-2 bg-red-600 text-white text-xs font-black hover:bg-red-500 transition-colors">Purge Batch</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══ PREVIEW MODAL ══════════════════════════════════════════════════════ -->
   <div id="preview-modal" class="fixed inset-0 z-50 items-stretch bg-gray-900/60 backdrop-blur-sm flex-col">
     <div class="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200 shrink-0">
@@ -770,7 +837,7 @@
   <script>
     const API = 'http://localhost:410';
     let currentPatientId = null, currentPatientData = null, allFiles = [], activeDocTab = 'all', activeClinicalTab = 'meds';
-    let currentJobId = null, pollTimer = null, logOffset = 0, allPatientIds = [], batchSelectAll = true, trackerSelectAll = true;
+    let currentJobId = null, pollTimer = null, logOffset = 0, allPatientIds = [], batchSelectAll = true, trackerSelectAll = true, batchPurgeSelectAll = true;
     let insuranceConfig = null;
     let patientNames = {};
 
@@ -823,6 +890,7 @@
           if (denialGapsChk) denialGapsChk.checked = false;
         }
       });
+      document.getElementById("batch-purge-modal").addEventListener("click", function (e) { if (e.target === this) closeBatchPurgeModal(); });
     });
 
     function setOnlineState(isOnline) {
@@ -2026,6 +2094,82 @@
       window.open('file://' + path, '_blank');
     }
 
+    // ── Batch Purge ────────────────────────────────────────────────────────
+    function openBatchPurgeModal() {
+      const modal = document.getElementById("batch-purge-modal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+
+      document.getElementById("batch-purge-patient-rows").innerHTML = allPatientIds.map(id => {
+        const name = patientNames[id] || ("Patient " + id);
+        return `
+        <tr class="hover:bg-gray-50">
+          <td class="py-2 pr-2"><input type="checkbox" class="batch-purge-patient-select lg-chk" value="${id}" checked></td>
+          <td class="py-2 pr-4 text-[11px] font-mono">${id}</td>
+          <td class="py-2 text-[11px] font-medium">${name}</td>
+        </tr>`;
+      }).join("");
+
+      batchPurgeSelectAll = true;
+      document.querySelector("[onclick=\"toggleBatchPurgeSelectAll()\"]").textContent = "Deselect All";
+    }
+
+    function closeBatchPurgeModal() {
+      const modal = document.getElementById("batch-purge-modal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
+    function toggleBatchPurgeSelectAll() {
+      batchPurgeSelectAll = !batchPurgeSelectAll;
+      document.querySelectorAll(".batch-purge-patient-select").forEach(c => c.checked = batchPurgeSelectAll);
+      document.querySelector("[onclick=\"toggleBatchPurgeSelectAll()\"]").textContent = batchPurgeSelectAll ? "Deselect All" : "Select All";
+    }
+
+    async function startBatchPurge() {
+      const checkboxes = [...document.querySelectorAll(".batch-purge-patient-select")];
+      const selectedIds = checkboxes.filter(c => c.checked).map(c => c.value);
+      if (!selectedIds.length) { alert("Select at least one patient."); return; }
+
+      const targets = [];
+      if (document.getElementById("batch-purge-persona").checked) targets.push("persona");
+      if (document.getElementById("batch-purge-reports").checked) targets.push("reports");
+      if (document.getElementById("batch-purge-summary").checked) targets.push("summary");
+      if (document.getElementById("batch-purge-logs").checked) targets.push("logs");
+      if (document.getElementById("batch-purge-db").checked) targets.push("db");
+      if (document.getElementById("batch-purge-records").checked) targets.push("records");
+      if (document.getElementById("batch-purge-debug").checked) targets.push("debug");
+      if (!targets.length) { alert("Select at least one item to purge."); return; }
+
+      const mode = document.querySelector("input[name=\"batch-purge-mode\"]:checked")?.value || "delete";
+
+      const ok = confirm(`Permanently ${mode} selected data for ${selectedIds.length} patients? This cannot be undone.`);
+      if (!ok) return;
+
+      closeBatchPurgeModal();
+      clearLogs();
+      appendLog(`🗑️ Starting batch purge for ${selectedIds.length} patients...`);
+
+      try {
+        const r = await fetch(`${API}/api/purge`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ target: "patient", patient_ids: selectedIds, mode, targets })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "Batch purge failed");
+        appendLog(`✅ ${d.message || "Batch purge completed."}`);
+        // Refresh patient list and current patient view if affected
+        loadPatients();
+        if (selectedIds.includes(currentPatientId)) {
+          onPatientChange();
+        }
+      } catch (e) {
+        appendLog("❌ Batch purge failed: " + e.message);
+        alert("Batch purge failed: " + e.message);
+      }
+    }
+
     // ── Documents ──────────────────────────────────────────────────────────
     async function loadDocuments(pid) {
       setDocList(null);
@@ -2064,6 +2208,82 @@
             </div>
             <span class="material-symbols-outlined text-[13px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>
         </a>`).join('');
+    }
+
+    // ── Batch Purge ────────────────────────────────────────────────────────
+    function openBatchPurgeModal() {
+      const modal = document.getElementById("batch-purge-modal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+
+      document.getElementById("batch-purge-patient-rows").innerHTML = allPatientIds.map(id => {
+        const name = patientNames[id] || ("Patient " + id);
+        return `
+        <tr class="hover:bg-gray-50">
+          <td class="py-2 pr-2"><input type="checkbox" class="batch-purge-patient-select lg-chk" value="${id}" checked></td>
+          <td class="py-2 pr-4 text-[11px] font-mono">${id}</td>
+          <td class="py-2 text-[11px] font-medium">${name}</td>
+        </tr>`;
+      }).join("");
+
+      batchPurgeSelectAll = true;
+      document.querySelector("[onclick=\"toggleBatchPurgeSelectAll()\"]").textContent = "Deselect All";
+    }
+
+    function closeBatchPurgeModal() {
+      const modal = document.getElementById("batch-purge-modal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
+    function toggleBatchPurgeSelectAll() {
+      batchPurgeSelectAll = !batchPurgeSelectAll;
+      document.querySelectorAll(".batch-purge-patient-select").forEach(c => c.checked = batchPurgeSelectAll);
+      document.querySelector("[onclick=\"toggleBatchPurgeSelectAll()\"]").textContent = batchPurgeSelectAll ? "Deselect All" : "Select All";
+    }
+
+    async function startBatchPurge() {
+      const checkboxes = [...document.querySelectorAll(".batch-purge-patient-select")];
+      const selectedIds = checkboxes.filter(c => c.checked).map(c => c.value);
+      if (!selectedIds.length) { alert("Select at least one patient."); return; }
+
+      const targets = [];
+      if (document.getElementById("batch-purge-persona").checked) targets.push("persona");
+      if (document.getElementById("batch-purge-reports").checked) targets.push("reports");
+      if (document.getElementById("batch-purge-summary").checked) targets.push("summary");
+      if (document.getElementById("batch-purge-logs").checked) targets.push("logs");
+      if (document.getElementById("batch-purge-db").checked) targets.push("db");
+      if (document.getElementById("batch-purge-records").checked) targets.push("records");
+      if (document.getElementById("batch-purge-debug").checked) targets.push("debug");
+      if (!targets.length) { alert("Select at least one item to purge."); return; }
+
+      const mode = document.querySelector("input[name=\"batch-purge-mode\"]:checked")?.value || "delete";
+
+      const ok = confirm(`Permanently ${mode} selected data for ${selectedIds.length} patients? This cannot be undone.`);
+      if (!ok) return;
+
+      closeBatchPurgeModal();
+      clearLogs();
+      appendLog(`🗑️ Starting batch purge for ${selectedIds.length} patients...`);
+
+      try {
+        const r = await fetch(`${API}/api/purge`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ target: "patient", patient_ids: selectedIds, mode, targets })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "Batch purge failed");
+        appendLog(`✅ ${d.message || "Batch purge completed."}`);
+        // Refresh patient list and current patient view if affected
+        loadPatients();
+        if (selectedIds.includes(currentPatientId)) {
+          onPatientChange();
+        }
+      } catch (e) {
+        appendLog("❌ Batch purge failed: " + e.message);
+        alert("Batch purge failed: " + e.message);
+      }
     }
   </script>
 </body>
