@@ -11,6 +11,7 @@ from .ai import client as ai_engine
 from .doc_generation import pdf_generator
 from .data import history as history_manager
 from .core import patient_db
+from .core import name_cache
 from .data import patient_record_writer
 from .core import state as state_manager
 from .doc_generation import planner as document_planner
@@ -397,6 +398,11 @@ def process_patient_workflow(
         db_entry = result.patient_persona.model_dump()
         patient_db.save_patient(patient_id, db_entry)
         p_full_name = f"{result.patient_persona.first_name} {result.patient_persona.last_name}"
+        # Keep the local name cache in sync immediately so the dropdown shows the real name.
+        try:
+            name_cache.update_entry(patient_id, p_full_name)
+        except Exception:
+            pass
         print(f"   💾 Patient DB updated: {p_full_name} (ID {patient_id})")
 
     # Ensure patient output folder uses "ID - Name" convention when possible
@@ -802,6 +808,11 @@ def preview_patient_generation(
     # Persist persona to DB so PDF rendering later has the correct identity
     if result.patient_persona:
         patient_db.save_patient(patient_id, result.patient_persona.model_dump())
+        _pn = f"{result.patient_persona.first_name} {result.patient_persona.last_name}".strip()
+        try:
+            name_cache.update_entry(patient_id, _pn)
+        except Exception:
+            pass
 
     # Serialise to plain JSON
     docs_serialised = []

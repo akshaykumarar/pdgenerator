@@ -125,7 +125,10 @@ def test_postgres_repository_operations(monkeypatch):
     try:
         # 1. Initialize
         repo._init_db()
+    except RuntimeError as e:
+        pytest.skip(f"PostgreSQL server unreachable: {e}")
         
+    try:
         # 2. Reset database
         repo.reset_database()
         assert repo.list_patient_ids() == []

@@ -1,4 +1,4 @@
-# Clinical Data Generator (v8.1)
+# Clinical Data Generator (v8.3)
 
 > **Automated Synthetic Healthcare Data Pipeline**
 > Generates high-fidelity clinical PDFs and FHIR-compliant personas for testing Prior Authorization workflows.
@@ -23,23 +23,23 @@
 - **Medications as First-Class Targets**: Automatically intercepts J/Q-prefixed HCPCS medication drug codes (e.g. `J0897`, `Q5124`) and routes them to specialized medication prompt structures and document plans. Supports 11-digit NDC codes (`XXXXX-XXXX-XX`), exact dosage/route/frequency, days supply, step therapy failure logs (`step_therapy_failed_agents`), baseline lab reports, and conditional infusion order protocol sheets.
 - **Supporting Documents Cap**: Intelligently caps supporting documents (e.g., radiology/specialist consults) to a maximum of 5, preserving core documents (PA Requests and Summaries).
 
-### 4. Patient Tracker CSV Exporter
-- **Excel-Safe Exporter**: Compiles Prior Authorization metrics for selected patients into a unified 12-column spreadsheet report (`patient_tracker_export.csv`).
-- **Formula Injection Protection**: Automatically sanitizes potential formula injection attempts by prepending a single quote (`'`) to values starting with `=`, `+`, `-`, or `@`.
-- **Sanitized Multiline Layouts**: Removes all HTML markup tags from cell contents, replacing them with Excel-friendly newlines (`\n`) and plain bullets (`- `).
-
-### 5. Visual Scan Simulation Filter
+### 4. Visual Scan Simulation Filter
 - **Rasterized Image Filter**: Flat-renders vector PDFs to flat, image-only documents using `PyMuPDF` (`fitz`), Pillow, and NumPy, making them look physically scanned.
 - **Adjustable Degradation Artifacts**: Features Light, Medium, and Heavy presets simulating feeding skews, sensor noise, light gradient shadows, lens blur, dust speckles, and aged paper tints.
 - **Summary Document Exclusion**: Summary documents (`Clinical_Summary_Patient_*.pdf`) are automatically excluded from scan filtering, keeping clinical summaries as clean digital vector PDFs.
 
-### 6. Concise Clinical Summary
+### 5. Concise Clinical Summary
 - Generates a 5-part summary for case evaluators:
   1. **Test Case and Overview** — Basic profile and case description.
   2. **Details from Extraction** — Insurance payer metadata and CPT/ICD code expectations.
   3. **Likelihood without Supporting Documents** — Baseline outcome probability.
   4. **Likelihood PA Score Change** — Impact assessment of each supporting report.
   5. **Overall Summary & Pointers** — Manual verification checklist.
+
+### 6. Unified Data Migration Utility (`migrate_data.py`)
+- **Bidirectional Sync**: Single script to migrate patients, insurance providers/plans, and CPT mappings between JSON files and PostgreSQL (`json_to_db` and `db_to_json`).
+- **Flexible Entity Targets**: Supports `--entities all`, `patients`, `insurance`, `cpt`.
+- **Conflict Strategies**: Supports `--strategy update`, `skip`, or `fail`.
 
 ### 7. Multi-User Concurrency
 - **Thread-Safe Logging Proxy**: Uses `ThreadSafeStdout` to capture standard print statements and route them to matching `job_id` log buffers for concurrent browser sessions.
@@ -62,14 +62,16 @@ All documents derive from `patient_state`, a canonical patient data model loaded
 
 ### Decoupled Storage Layer
 Supports two repository backends toggled via `PATIENT_STORAGE_BACKEND`:
-1. **JSON Backend**: (Default) Saves data to `src/core/patients_db.json`.
-2. **PostgreSQL Backend**: Optimizes reads/writes using B-tree indices on patient names/dates of birth and a GIN index on `persona_data` (JSONB). Initialized via schema DDL at `src/core/schema.sql`.
+1. **JSON Backend**: (Default) Saves data to `src/core/patients_db.json/`, `core/insurance_config.json`, and `core/cpt_code_map.json`.
+2. **PostgreSQL Backend**: Uses `patients`, `insurance_providers`, `insurance_plans`, and `cpt_code_map` tables with B-tree and GIN indexes. Initialized via schema DDL at `src/core/schema.sql`.
+
+Additionally, a local **Patient Name Cache** (`core/patient_name_cache.json`) holds `{patient_id: name}` key-values. This is updated live during workflow runs and served cache-first by the `/api/patients` endpoint, while a background thread refreshes the cache asynchronously from the configured DB repository backend. This provides instant frontend dropdown population (~50ms) regardless of PostgreSQL network latency.
 
 ### Directory Structure
 ```text
 pdgenerator/
 ├── cred/                       # Credentials & environment configuration (.env)
-├── core/                       # Reference case data (Excel plan, code maps)
+├── core/                       # Reference case data (Excel plan, code maps, patient name cache)
 ├── config/                     # Externalized rules & pattern configurations
 ├── templates/                  # PDF layouts and planner rule schemas
 ├── generated_output/           # Generated files (gitignored)
@@ -85,11 +87,12 @@ pdgenerator/
 │   ├── ai/                     # LLM client, prompts, models, and Tavily search
 │   ├── core/                   # Patient DB, state, and config setup
 │   ├── data/                   # Excel loaders, history tracking, records
-│   ├── doc_generation/         # PDF planner, validator, and tracker exporters
+│   ├── doc_generation/         # PDF planner and validator
 │   ├── utils/                  # Date parsing, versioning, and purge managers
 │   ├── cli.py                  # Terminal interactive entrypoint
 │   └── workflow.py             # Core pipeline orchestrator
 ├── api_server.py               # Flask REST API (port 410)
+├── migrate_data.py             # Unified bidirectional data migration CLI
 ├── run.py                      # Interactive CLI launcher
 ├── compact_patient_data.py     # Log and history compaction CLI
 └── remove_persona.py           # Deep persona removal utility
@@ -97,8 +100,8 @@ pdgenerator/
 
 ### Core File Reference
 - `src/workflow.py` — Orchestrates data load, LLM calls, document validation, and PDF output.
+- `migrate_data.py` — Unified CLI for bidirectional JSON <-> PostgreSQL data migration.
 - `src/utils/purge_manager.py` — Cleans up folders, records, and database rows.
-- `src/doc_generation/patient_tracker_export.py` — Formats and writes the CSV export.
 - `src/ai/client.py` — Handles API interfaces with OpenAI and Vertex AI.
 - `src/ai/prompts.py` — Central prompt definitions and gap archetype pools.
 

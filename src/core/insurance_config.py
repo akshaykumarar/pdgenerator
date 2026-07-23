@@ -55,12 +55,29 @@ def _normalize_config(cfg: Dict[str, Any]) -> Dict[str, Any]:
     return normalized
 
 
-def _load_config() -> Dict[str, Any]:
+def _load_config_from_file() -> Dict[str, Any]:
     if not os.path.exists(_CONFIG_PATH):
         return {"default_provider_id": None, "providers": []}
     with open(_CONFIG_PATH, "r", encoding="utf-8") as f:
         raw = json.load(f)
     return _normalize_config(raw)
+
+
+def _load_config() -> Dict[str, Any]:
+    backend = os.getenv("PATIENT_STORAGE_BACKEND", "json").strip().lower()
+    if backend == "postgres":
+        from .postgres_repository import PostgresPatientRepository
+        repo = PostgresPatientRepository()
+        cfg = repo.load_insurance_config()
+        if cfg and cfg.get("providers"):
+            return _normalize_config(cfg)
+        # If DB table is empty, seed once from file
+        file_cfg = _load_config_from_file()
+        if file_cfg and file_cfg.get("providers"):
+            repo.save_insurance_config(file_cfg)
+        return file_cfg
+
+    return _load_config_from_file()
 
 
 def get_config(force_reload: bool = False) -> Dict[str, Any]:

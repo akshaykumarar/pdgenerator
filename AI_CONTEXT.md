@@ -510,6 +510,26 @@ Workflow continues gracefully.
 * **Macro-Gap Injection**: Added a new `Macro-Gap` archetype class (MG-001/MG-002) for denial cases, allowing the system to omit specialist notes or critical diagnostic reports. Updated the selection logic to always include at least one macro-level gap.
 * **Medication Prompt Updates**: Added minor adjustments to the medication prompt guidelines to clarify that "procedure" refers to drug administration, explicitly require step-therapy formulary exception details, and pattern medication-specific encounter records (e.g., infusion center visits).
 
+### v8.2 Database Architecture & Cleanup (2026-07-23)
+* **Expanded PostgreSQL Schema**: Added DDL tables for `insurance_providers`, `insurance_plans`, and `cpt_code_map` with B-tree and unique indexes (`src/core/schema.sql`).
+* **PostgreSQL Repository Methods**: Implemented `load_insurance_config()`, `save_insurance_config()`, `load_cpt_code_map()`, and `save_cpt_code_map()` in `src/core/postgres_repository.py`.
+* **Unified Bidirectional Migration**: Created single CLI script `migrate_data.py` supporting bidirectional sync (`json_to_db` and `db_to_json`) for `all`, `patients`, `insurance`, and `cpt` entities with `--strategy update|skip|fail`. Successfully executed migration into PostgreSQL schema `n8n` (73 patients, 5 insurance providers, 14 insurance plans, 27 CPT mappings).
+* **DB Error Banner & Health Check**: Updated `/api/status` endpoint in `api_server.py` to test active database connection. Added animated red top ribbon error banner (`#db-error-banner`) and DB status indicator dot (`#db-dot`) in `ui/index.html` to alert the user of connection errors, timeouts, or authentication failures.
+* **Redundant Code & UI Cleanup**: Removed legacy `src/doc_generation/patient_tracker_export.py`, `@app.route("/api/patient_tracker_export")`, `@app.route("/api/purge")`, and associated HTML/JS elements for Batch Purge and Tracker Export in `ui/index.html`.
+* **UI Event Listener & Syntax Cleanup**: Resolved `ui/index.html` initialization script crashes by removing the event listener for the deleted `batch-purge-modal` and removing dangling/duplicated tracker export and purge functions.
+* **Database Connection Error Fallback**: Added exception handling to `/api/patients` in `api_server.py` to fall back gracefully to a default name pattern (`Patient {id}`) when database connections fail, ensuring patient listing is not blocked.
+* **Bulk Patient Name Lookup (v8.2.1 fix)**: Replaced N sequential `get_patient_name()` DB calls in `/api/patients` with a single `get_patient_names_bulk()` call. Added `get_patient_names_bulk(patient_ids)` method to `PatientRepository` base class, `PostgresPatientRepository` (uses `WHERE patient_id = ANY(%s)` — one query), and `JSONPatientRepository`. Exposed via `patient_db.get_patient_names_bulk()`. This fixes the patient dropdown stalling on page load when the PostgreSQL backend has high latency or connection errors, reducing 77 DB round-trips to 1.
+
+### v8.3 Instant Patient Roster & UI Loaders (2026-07-23)
+* **Local Name Cache** (`src/core/name_cache.py`): New thread-safe module that persists `{patient_id: display_name}` to `core/patient_name_cache.json`. `load_cache()` returns instantly from disk; `save_cache()` and `update_entry()` are mutex-protected to prevent race conditions from background threads.
+* **Cache-First `/api/patients`**: The endpoint now reads IDs from Excel and names from the local cache (total ~50 ms, no DB), then spawns a daemon thread to refresh names from PostgreSQL/JSON in the background. Next page load shows real generated names automatically.
+* **Live Cache Writes in Workflow**: `src/workflow.py` imports `name_cache` and calls `name_cache.update_entry(patient_id, name)` immediately after both `patient_db.save_patient()` calls so the dropdown shows the correct name as soon as a persona is generated — without waiting for the background refresh cycle.
+* **UI — Page Loader**: Full-screen white overlay (`#page-loader`) with spinning indicator and "Loading patient roster…" label. Fades out (CSS transition) once `loadPatients()` resolves — success or failure.
+* **UI — Patient Selector Spinner**: Small inline spinner next to the "Active Patient" label (`#patient-select-spinner`) that shows while `/api/patients` is in flight. Shows a clear ⚠ error message in the dropdown if the server is unreachable.
+* **UI — Clinical Skeleton**: Shimmer skeleton lines (`#clinical-loading`) appear inside the clinical content pane while `/api/patient/<id>` is fetching. All content children are hidden during the load, then restored once data arrives.
+* **UI — Doc List Skeleton**: Three skeleton shimmer bars replace the document list while `/api/output/<id>` is in flight (called by `showDocSkeleton()` from `onPatientChange()`).
+* **Improved Error Surface**: `loadPatients()` now checks `r.ok` and `d.error` before populating the dropdown, and logs a descriptive console error with the function name prefix for easier browser DevTools debugging.
+
 ### v7.0 Prior Authorization Tracker CSV Export Transition (2026-05-22)
 * **High-Fidelity CSV Exporter**: Replaced the ReportLab landscape PDF and companion TSV with a single, premium standard CSV file (`patient_tracker_export.csv`) located directly inside `generated_output/patient-data/`.
 * **HTML Sanitization**: Ensured all cells in the exported CSV are completely sanitized of HTML tags, using standard newlines (`\n`) and plain text bullets (`- `) to ensure compatibility with Microsoft Excel copy-pasting.
@@ -607,9 +627,9 @@ The patient storage persistence layer uses a repository pattern decoupled from b
 - Toggle between backends using `PATIENT_STORAGE_BACKEND` env var: `'json'` (local file) or `'postgres'` (PostgreSQL database).
 - **PostgreSQL Schema**: Defined in `src/core/schema.sql`. Schema is initialized automatically via the repository (exactly once per instance via `_schema_initialized` guard). Uses indices on `last_name, first_name` and `dob` for deduplication/listing, and a GIN index on `persona_data` (JSONB) for robust querying.
 - **Migration Scripts**:
-  - `migrate_json_to_postgres.py` transfers JSON patient records to PostgreSQL.
-  - `migrate_postgres_to_json.py` reverse migrates PostgreSQL records to JSON.
-  - Both CLI scripts accept `--strategy` option (`skip`, `update`, `fail`) to resolve duplicate ID conflicts.
+  - `migrate_data.py` is the unified bidirectional migration CLI tool (supporting `json_to_db` and `db_to_json`) for `all`, `patients`, `insurance`, and `cpt` entities.
+  - Accepts `--strategy` option (`skip`, `update`, `fail`) to resolve duplicate ID conflicts.
+- **Strict Backend Selection**: Storage operations strictly execute on the configured `PATIENT_STORAGE_BACKEND` (`'json'` or `'postgres'`). No silent cross-backend fallback occurs: if PostgreSQL is unreachable in `'postgres'` mode, explicit database errors (HTTP 500) are returned. Complete feature parity is maintained in both `'json'` and `'postgres'` modes.
 - **Schema name validation**: `DB_SCHEMA` env var is validated against `^[a-zA-Z_][a-zA-Z0-9_]*$` on repository instantiation.
 - **All patient data operations** route through `src/core/patient_db.py` → `PatientRepository` → active backend. No module touches `patients_db.json` directly outside `json_repository.py`.
 

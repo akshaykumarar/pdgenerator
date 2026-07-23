@@ -166,6 +166,11 @@ def purge_patient_selective(patient_id: str, targets: list[str], mode: str = "de
     if "db" in targets:
         archive_dir = _archive_dir_for_patient(patient_id) if mode == "archive" else None
         patient_db.delete_patient(patient_id, archive_dir=archive_dir)
+        try:
+            from ..core import name_cache
+            name_cache.remove_entries([patient_id])
+        except Exception as e:
+            print(f"      ⚠️  Could not remove name cache entry: {e}")
 
     print(f"\n   ✨ Patient {patient_id} Purge Complete.")
 
@@ -192,6 +197,12 @@ def purge_all(force: bool = False) -> None:
     try:
         patient_db.reset_database()
         print("      ✅ Reset: Patient Database")
+        try:
+            from ..core import name_cache
+            name_cache.save_cache({})
+            print("      ✅ Reset: Name Cache")
+        except Exception as e:
+            print(f"      ⚠️  Could not reset name cache: {e}")
     except Exception as e:
         print(f"      ⚠️  Could not reset DB: {e}")
 
@@ -226,6 +237,12 @@ def purge_personas(force: bool = False) -> None:
     try:
         patient_db.reset_database()
         print("      ✅ Reset: Patient Database")
+        try:
+            from ..core import name_cache
+            name_cache.save_cache({})
+            print("      ✅ Reset: Name Cache")
+        except Exception as e:
+            print(f"      ⚠️  Could not reset name cache: {e}")
     except Exception as e:
         print(f"      ⚠️  Could not reset DB: {e}")
 

@@ -24,6 +24,7 @@ load_dotenv(os.path.join(BASE_DIR, "cred", ".env"))
 from src.data import loader as data_loader
 from src.core import patient_db
 from src.core import insurance_config
+from src.core import name_cache
 
 # Refresh CPT code mapping from UAT Plan on server startup
 try:
@@ -540,21 +541,46 @@ def _run_generation_from_content(job_id: str, patient_id: str, generation_mode: 
 @app.route("/api/status")
 def api_status():
     """
-    Health check.
+    Health check including database status.
     ---
     tags:
       - System
     responses:
       200:
-        description: Returns server online status
+        description: Returns server online status and DB health status
     """
-    return jsonify({"ok": True, "timestamp": datetime.now().isoformat()})
+    backend = os.getenv("PATIENT_STORAGE_BACKEND", "json").strip().lower()
+    db_status = "ok"
+    db_error = None
+    try:
+        if backend == "postgres":
+            from src.core.postgres_repository import PostgresPatientRepository
+            repo = PostgresPatientRepository()
+            conn = repo._connect()
+            conn.close()
+        else:
+            patient_db.list_patient_ids()
+    except Exception as e:
+        db_status = "error"
+        db_error = str(e)
+
+    return jsonify({
+        "ok": True,
+        "timestamp": datetime.now().isoformat(),
+        "storage_backend": backend,
+        "db_status": db_status,
+        "db_error": db_error,
+    })
 
 
 @app.route("/api/patients")
 def api_patients():
     """
-    Return all patient IDs from the Excel plan and their current names from the database.
+    Return all patient IDs from the Excel plan and their display names.
+
+    Names are served instantly from a local disk cache (core/patient_name_cache.json).
+    A background daemon thread refreshes names from the active DB backend so that
+    subsequent loads see real generated names without blocking the response.
     ---
     tags:
       - Patients
@@ -564,104 +590,49 @@ def api_patients():
     """
     try:
         ids = data_loader.get_all_patient_ids()
-        patient_names = {}
-        for p_id in ids:
-            name = patient_db.get_patient_name(p_id)
-            if name:
-                patient_names[p_id] = name
-            else:
-                patient_names[p_id] = f"Patient {p_id}"
+
+        # 1. Serve immediately from local disk cache — no DB wait.
+        cached = name_cache.load_cache()
+        patient_names = {p_id: cached.get(p_id, f"Patient {p_id}") for p_id in ids}
+
+        # 2. Refresh cache from DB in the background — does NOT block the response.
+        def _refresh_names_bg():
+            try:
+                db_names = patient_db.get_patient_names_bulk(ids)
+                if db_names:
+                    # DB names take priority; preserve any extra cached entries.
+                    merged = {**cached, **db_names}
+                    name_cache.save_cache(merged)
+            except Exception as bg_err:
+                bg_backend = os.getenv("PATIENT_STORAGE_BACKEND", "json").strip().lower()
+                print(f"[INFO] Background name cache refresh skipped [{bg_backend} mode]: {bg_err}")
+
+        threading.Thread(target=_refresh_names_bg, daemon=True).start()
+
         return jsonify({"patients": ids, "patient_names": patient_names})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        backend = os.getenv("PATIENT_STORAGE_BACKEND", "json").strip().lower()
+        return jsonify({"error": f"Database Error [{backend} mode]: {str(e)}"}), 500
 
-
-@app.route("/api/patient_tracker_export", methods=["POST"])
-def api_patient_tracker_export():
-    """
-    Generate a prior authorization patient tracker CSV.
-    Returns the CSV as a direct download attachment.
-    ---
-    tags:
-      - Reports
-    parameters:
-      - in: body
-      - name: body
-        required: true
-        schema:
-          type: object
-          properties:
-            patient_ids:
-              type: array
-              items:
-                type: string
-              description: List of patient IDs to export
-    responses:
-      200:
-        description: CSV attachment containing the clinical priority table
-      400:
-        description: No patient IDs or invalid request
-      500:
-        description: Generation failure
-    """
-    try:
-        data = request.get_json() or {}
-        patient_ids = data.get("patient_ids", [])
-        if not patient_ids:
-            return jsonify({"error": "No patient IDs provided"}), 400
-            
-        normalized_ids = []
-        for p_id in patient_ids:
-            clean_id = str(p_id).strip()
-            clean_id = "".join(c for c in clean_id if c.isalnum() or c in "-_")
-            if clean_id:
-                normalized_ids.append(clean_id)
-                
-        if not normalized_ids:
-            return jsonify({"error": "No valid patient IDs found"}), 400
-            
-        from src.doc_generation.patient_tracker_export import generate_tracker_export
-        csv_path = generate_tracker_export(normalized_ids)
-        
-        if not os.path.exists(csv_path):
-            return jsonify({"error": "Failed to generate export file"}), 500
-            
-        directory = os.path.dirname(csv_path)
-        filename = os.path.basename(csv_path)
-        
-        return send_from_directory(
-            directory,
-            filename,
-            as_attachment=True,
-            download_name="patient_tracker_export.csv",
-            mimetype="text/csv"
-        )
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
 
 
 
 @app.route("/api/patient/<patient_id>")
 def api_get_patient(patient_id: str):
     """Return the current DB record for a patient plus UAT case details."""
-    record = patient_db.load_patient(patient_id)
-
-    # Enrich with case/UAT info from the Excel plan so the UI can show
-    # case type, expected outcome, CPT/ICD codes without a separate call.
-    case_details: dict | None = None
     try:
+        record = patient_db.load_patient(patient_id)
         case_details = data_loader.get_case_details(patient_id)
-    except Exception:
-        pass
-
-    if record or case_details:
-        return jsonify({
-            "found": bool(record),
-            "data": record,
-            "case_details": case_details,
-        })
-    return jsonify({"found": False, "data": None, "case_details": None})
+        if record or case_details:
+            return jsonify({
+                "found": bool(record),
+                "data": record,
+                "case_details": case_details,
+            })
+        return jsonify({"found": False, "data": None, "case_details": None})
+    except Exception as e:
+        backend = os.getenv("PATIENT_STORAGE_BACKEND", "json").strip().lower()
+        return jsonify({"error": f"Database Error [{backend} mode]: {str(e)}"}), 500
 
 
 @app.route("/api/patient/<patient_id>", methods=["PUT"])
@@ -1172,36 +1143,53 @@ def api_download_file(patient_id: str, file_type: str, filename: str):
     return send_from_directory(directory, filename, mimetype='application/pdf', as_attachment=False)
 
 
+@app.route("/api/patient_tracker_export", methods=["POST"])
+def api_patient_tracker_export():
+    """
+    Generate a prior authorization patient tracker CSV.
+    Returns the CSV as a direct download attachment.
+    """
+    try:
+        data = request.get_json() or {}
+        patient_ids = data.get("patient_ids", [])
+        if not patient_ids:
+            return jsonify({"error": "No patient IDs provided"}), 400
+            
+        normalized_ids = []
+        for p_id in patient_ids:
+            clean_id = str(p_id).strip()
+            clean_id = "".join(c for c in clean_id if c.isalnum() or c in "-_")
+            if clean_id:
+                normalized_ids.append(clean_id)
+                
+        if not normalized_ids:
+            return jsonify({"error": "No valid patient IDs found"}), 400
+            
+        from src.doc_generation.patient_tracker_export import generate_tracker_export
+        csv_path = generate_tracker_export(normalized_ids)
+        
+        if not os.path.exists(csv_path):
+            return jsonify({"error": "Failed to generate export file"}), 500
+            
+        directory = os.path.dirname(csv_path)
+        filename = os.path.basename(csv_path)
+        
+        return send_from_directory(
+            directory,
+            filename,
+            as_attachment=True,
+            download_name="patient_tracker_export.csv",
+            mimetype="text/csv"
+        )
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/purge", methods=["POST"])
 def api_purge():
     """
     Purge specific databases or generated files
-    ---
-    tags:
-      - System
-    parameters:
-      - in: body
-        name: body
-        required: true
-        schema:
-          type: object
-          properties:
-            target:
-              type: string
-              enum: [all, personas, documents, summaries_only, reports_only, patient]
-            patient_id:
-              type: string
-            mode:
-              type: string
-              enum: [delete, archive]
-            targets:
-              type: array
-              items:
-                type: string
-              description: "For target=patient: persona, reports, summary, logs, db, records, debug"
-    responses:
-      200:
-        description: Purge successful
     """
     from src.utils import purge_manager
     body = request.get_json(force=True) or {}

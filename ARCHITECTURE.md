@@ -1,4 +1,4 @@
-# Clinical Data Generator — System Architecture (v6)
+# Clinical Data Generator — System Architecture (v8.3)
 
 ## 1. Overview
 
@@ -45,7 +45,8 @@ graph TD
     end
     subgraph Processing
         API["API Server (api_server.py)"] --> Generator["Workflow Orchestrator (src/workflow.py)"]
-        API --> TrackerExporter["Patient Tracker Exporter (src/doc_generation/patient_tracker_export.py)"]
+        API --> NameCache["Name Cache (src/core/name_cache.py)"]
+        Generator --> NameCache
         Generator --> DataLoader["Case Loader (src/data/loader.py)"]
         Generator --> PatientState["Patient State Builder"]
         PatientState --> AIEngine["AI Engine (src/ai/client.py)"]
@@ -54,11 +55,12 @@ graph TD
         Validator --> PDFFactory["PDF Renderer (src/doc_generation/pdf_generator.py)"]
         Generator --> Search["Search Engine (src/ai/search_engine.py)"]
         Generator --> History["History Manager (src/data/history.py)"]
-        Generator --> DB["Patient Database (src/core/patient_db.py)"]
+        Generator --> DB["Patient Database Abstraction (src/core/repository.py)"]
+        DB --> JSONRepo["JSON Repo (src/core/json_repository.py)"]
+        DB --> PostgresRepo["PostgreSQL Repo (src/core/postgres_repository.py)"]
     end
     subgraph Output
         PDFFactory --> OutputDir["generated_output/"]
-        TrackerExporter --> OutputDir
     end
     UI --> API
 ```
@@ -262,6 +264,13 @@ Hardcoded logic is externalized into JSON configs:
 
 - `config/remediation_rules.json`
 - `config/sanitization_patterns.json`
+
+### Patient Name Cache (`src/core/name_cache.py`)
+
+A thread-safe local caching layer for fast patient dropdown population in the UI. 
+- **Purpose**: Prevents blocking/stalling page loads by serving a JSON-mapped dictionary of `{patient_id: display_name}` from disk (`core/patient_name_cache.json`) immediately (totaling ~50ms).
+- **Background Refresh**: A background thread asynchronously requests names in bulk from PostgreSQL/JSON repository backends to update the disk cache.
+- **Workflow Hook**: Every successful persona generation triggers a live cache update (`name_cache.update_entry`) to ensure immediate data synchronization for the active user session without waiting for background loops.
 
 ### Patient Database (`src/core/patient_db.py`)
 
