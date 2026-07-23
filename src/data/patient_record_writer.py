@@ -136,6 +136,20 @@ def write_patient_record(
         lines.append(_val("PA Urgency", pa.get("urgency_level", "(not recorded)")))
         lines.append(_val("PA Justification", pa.get("clinical_justification", "(not recorded)")))
         lines.append(_val("Prior Treatments", pa.get("previous_treatments", "(not recorded)")))
+        if pa.get("ndc_code"):
+            lines.append(_val("NDC Code (11-digit)", pa.get("ndc_code")))
+        if pa.get("hcpcs_code"):
+            lines.append(_val("HCPCS Drug Code", pa.get("hcpcs_code")))
+        if pa.get("administration_route"):
+            lines.append(_val("Administration Route", pa.get("administration_route")))
+        if pa.get("dosing_frequency"):
+            lines.append(_val("Dosing Frequency", pa.get("dosing_frequency")))
+        if pa.get("days_supply"):
+            lines.append(_val("Days Supply", pa.get("days_supply")))
+        if pa.get("step_therapy_failed_agents"):
+            failed = pa.get("step_therapy_failed_agents")
+            if isinstance(failed, list) and failed:
+                lines.append(_val("Step Therapy Failed Agents", "; ".join(failed)))
 
     # ── CURRENT VITALS ────────────────────────────────────────────────────────
     lines.append(_section("5. Current Vital Signs"))
@@ -258,6 +272,21 @@ def write_patient_record(
     if meds:
         for m in meds:
             lines.append(f"  [{m.get('status', '?').upper()}] {m.get('brand', '?')} ({m.get('generic_name', '?')}) — {m.get('dosage', '?')}\n")
+            meta = []
+            if m.get("ndc_code"):
+                meta.append(f"NDC: {m.get('ndc_code')}")
+            if m.get("hcpcs_code"):
+                meta.append(f"HCPCS: {m.get('hcpcs_code')}")
+            if m.get("route"):
+                meta.append(f"Route: {m.get('route')}")
+            if m.get("frequency"):
+                meta.append(f"Freq: {m.get('frequency')}")
+            if m.get("days_supply"):
+                meta.append(f"Supply: {m.get('days_supply')}")
+            if m.get("refills"):
+                meta.append(f"Refills: {m.get('refills')}")
+            if meta:
+                lines.append(f"    {' | '.join(meta)}\n")
             lines.append(f"    Qty: {m.get('qty', '?')} | Rx by: {m.get('prescribed_by', '?')} | Reason: {m.get('reason', '?')}\n")
             lines.append(f"    Period: {m.get('start_date', '?')} → {m.get('end_date', 'ongoing')}\n")
     else:

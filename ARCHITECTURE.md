@@ -123,7 +123,8 @@ The Patient State Layer ensures that all documents reference the same patient da
 
 ### Key Data Models (Pydantic)
 
-- **`PatientPersona`**: Full synthetic patient record (demographics, diagnoses, medications, encounters, imaging, labs, etc.)
+- **`PatientPersona`**: Full synthetic patient record (demographics, diagnoses, medications, encounters, imaging, labs, etc.).
+- **`MedicationEntry` & `PARequestDetails`**: Supports medicine PA fields including 11-digit NDCs (`ndc_code`), HCPCS drug codes (`hcpcs_code`), administration route, dosing frequency, days supply, refills, and step-therapy failed agents (`step_therapy_failed_agents`).
 - **`GeneratedDocument`**: Single clinical document (title, type, content sections).
 - **`ClinicalDataPayload`**: Combined persona + documents + changes summary. The `documents` field uses the alias `structured_documents` for AI fidelity; both keys are normalised by `_parse_vertex_response()`.
 - **`AnnotatorSummary`**: Post-generation quality summary used for PA optimization scoring.
