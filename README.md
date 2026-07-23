@@ -1,4 +1,4 @@
-# Clinical Data Generator (v8.2)
+# Clinical Data Generator (v8.3)
 
 > **Automated Synthetic Healthcare Data Pipeline**
 > Generates high-fidelity clinical PDFs and FHIR-compliant personas for testing Prior Authorization workflows.
@@ -64,11 +64,13 @@ Supports two repository backends toggled via `PATIENT_STORAGE_BACKEND`:
 1. **JSON Backend**: (Default) Saves data to `src/core/patients_db.json/`, `core/insurance_config.json`, and `core/cpt_code_map.json`.
 2. **PostgreSQL Backend**: Uses `patients`, `insurance_providers`, `insurance_plans`, and `cpt_code_map` tables with B-tree and GIN indexes. Initialized via schema DDL at `src/core/schema.sql`.
 
+Additionally, a local **Patient Name Cache** (`core/patient_name_cache.json`) holds `{patient_id: name}` key-values. This is updated live during workflow runs and served cache-first by the `/api/patients` endpoint, while a background thread refreshes the cache asynchronously from the configured DB repository backend. This provides instant frontend dropdown population (~50ms) regardless of PostgreSQL network latency.
+
 ### Directory Structure
 ```text
 pdgenerator/
 ├── cred/                       # Credentials & environment configuration (.env)
-├── core/                       # Reference case data (Excel plan, code maps)
+├── core/                       # Reference case data (Excel plan, code maps, patient name cache)
 ├── config/                     # Externalized rules & pattern configurations
 ├── templates/                  # PDF layouts and planner rule schemas
 ├── generated_output/           # Generated files (gitignored)

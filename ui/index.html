@@ -147,6 +147,95 @@
       letter-spacing: 2px;
       color: rgba(0, 0, 0, 0.35);
     }
+
+    /* ── Page Loader ─────────────────────────────────────────── */
+    #page-loader {
+      position: fixed;
+      inset: 0;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      z-index: 9999;
+      transition: opacity 0.35s ease, visibility 0.35s ease;
+    }
+    #page-loader.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    #page-loader .pl-logo {
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #1a1a1a;
+    }
+    #page-loader .pl-sub {
+      font-size: 10px;
+      color: #9ca3af;
+      letter-spacing: 0.1em;
+    }
+
+    /* ── Spinner ─────────────────────────────────────────────── */
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border: 2.5px solid #e5e7eb;
+      border-top-color: #1a1a1a;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    .spinner-sm {
+      width: 13px;
+      height: 13px;
+      border: 2px solid #e5e7eb;
+      border-top-color: #6b7280;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Skeleton shimmer ────────────────────────────────────── */
+    .skeleton-line {
+      height: 10px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    /* ── Patient selector loading state ──────────────────────── */
+    #patient-select-wrap { position: relative; }
+    #patient-select-spinner {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: none;
+    }
+    #patient-select-spinner.active { display: block; }
+
+    /* ── Clinical content loading overlay ────────────────────── */
+    #clinical-loading {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      padding: 20px;
+    }
+    #clinical-loading.active { display: flex; }
+
+    /* ── Doc list inline loader ───────────────────────────────── */
+    .doc-skeleton {
+      height: 38px;
+      border-radius: 6px;
+    }
   </style>
   <!-- Quill.js 1.3.7 -->
   <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
@@ -154,6 +243,13 @@
 </head>
 
 <body>
+
+  <!-- ═══ PAGE LOADER ═══════════════════════════════════════════════════════ -->
+  <div id="page-loader">
+    <div class="spinner"></div>
+    <div class="pl-logo">Command Center</div>
+    <div class="pl-sub">Loading patient roster…</div>
+  </div>
 
   <!-- ═══ OFFLINE BANNER ═══════════════════════════════════════════════════════ -->
   <div id="offline-banner"
@@ -210,11 +306,16 @@
 
       <!-- Patient selector -->
       <div class="p-4 border-b border-gray-200 shrink-0">
-        <label class="block text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2">Active Patient</label>
-        <select id="patient-select" title="Select a patient to view their data and generate documents"
-          class="w-full border border-gray-200 rounded text-sm px-3 py-2 bg-white focus:ring-1 focus:ring-gray-900 focus:outline-none cursor-pointer appearance-none">
-          <option value="">Loading…</option>
-        </select>
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-[9px] font-black uppercase tracking-widest text-gray-400">Active Patient</label>
+          <span id="patient-select-spinner" class="spinner-sm"></span>
+        </div>
+        <div id="patient-select-wrap">
+          <select id="patient-select" title="Select a patient to view their data and generate documents"
+            class="w-full border border-gray-200 rounded text-sm px-3 py-2 bg-white focus:ring-1 focus:ring-gray-900 focus:outline-none cursor-pointer appearance-none">
+            <option value="">Loading…</option>
+          </select>
+        </div>
       </div>
 
       <!-- Identity -->
@@ -348,6 +449,16 @@
       </div>
       <!-- Content -->
       <div id="clinical-content" class="flex-1 overflow-y-auto custom-scrollbar p-5">
+        <!-- Skeleton loader — shown while patient data is in-flight -->
+        <div id="clinical-loading">
+          <div class="skeleton-line w-1/3"></div>
+          <div class="skeleton-line w-full"></div>
+          <div class="skeleton-line w-5/6"></div>
+          <div class="skeleton-line w-2/3"></div>
+          <div class="skeleton-line w-full mt-4"></div>
+          <div class="skeleton-line w-4/5"></div>
+          <div class="skeleton-line w-3/4"></div>
+        </div>
         <p class="text-gray-400 italic text-sm">Select a patient to load clinical data…</p>
       </div>
     </section>
@@ -683,7 +794,6 @@
           if (denialGapsChk) denialGapsChk.checked = false;
         }
       });
-      document.getElementById("batch-purge-modal").addEventListener("click", function (e) { if (e.target === this) closeBatchPurgeModal(); });
     });
 
     function setOnlineState(isOnline) {
@@ -697,6 +807,39 @@
         controls.forEach(c => { c.disabled = false; c.classList.remove('opacity-50', 'pointer-events-none'); });
         if (currentJobId && pollTimer) document.getElementById('btn-generate').disabled = true;
       }
+    }
+
+    // ── Loader helpers ────────────────────────────────────────────────────
+    function hidePageLoader() {
+      const el = document.getElementById('page-loader');
+      if (el) el.classList.add('hidden');
+    }
+
+    function showPatientSpinner(on) {
+      const el = document.getElementById('patient-select-spinner');
+      if (el) el.style.display = on ? 'inline-block' : 'none';
+    }
+
+    function showClinicalSkeleton(on) {
+      const sk = document.getElementById('clinical-loading');
+      const ct = document.getElementById('clinical-content');
+      if (!sk || !ct) return;
+      if (on) {
+        sk.classList.add('active');
+        // hide all direct children of clinical-content except the skeleton
+        [...ct.children].forEach(c => { if (c !== sk) c.style.visibility = 'hidden'; });
+      } else {
+        sk.classList.remove('active');
+        [...ct.children].forEach(c => { if (c !== sk) c.style.visibility = ''; });
+      }
+    }
+
+    function showDocSkeleton() {
+      const list = document.getElementById('doc-list');
+      if (!list) return;
+      list.innerHTML = [1, 2, 3].map(() =>
+        `<div class="skeleton-line doc-skeleton mb-2"></div>`
+      ).join('');
     }
 
     function showDbErrorBanner(msg) {
@@ -746,8 +889,12 @@
     }
 
     async function loadPatients() {
+      showPatientSpinner(true);
       try {
-        const r = await fetch(`${API}/api/patients`); const d = await r.json();
+        const r = await fetch(`${API}/api/patients`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const d = await r.json();
+        if (d.error) throw new Error(d.error);
         allPatientIds = d.patients || [];
         patientNames = d.patient_names || {};
         const sel = document.getElementById('patient-select');
@@ -759,7 +906,14 @@
           o.textContent = id + ' - ' + name;
           sel.appendChild(o);
         });
-      } catch (e) { console.error(e); }
+      } catch (e) {
+        console.error('[loadPatients]', e);
+        const sel = document.getElementById('patient-select');
+        if (sel) sel.innerHTML = '<option value="">⚠ Failed to load — is server running?</option>';
+      } finally {
+        showPatientSpinner(false);
+        hidePageLoader();
+      }
     }
 
     async function onPatientChange() {
@@ -767,15 +921,23 @@
       currentPatientData = null;
       currentCaseDetails = null;
       if (!currentPatientId) { clearDossier(); setDocList([]); return; }
+      // Show skeleton while per-patient data loads
+      showClinicalSkeleton(true);
+      showDocSkeleton();
       try {
-        const r = await fetch(`${API}/api/patient/${currentPatientId}`); const d = await r.json();
+        const r = await fetch(`${API}/api/patient/${currentPatientId}`);
+        const d = await r.json();
         currentPatientData = d.data || null;
         currentCaseDetails = d.case_details || null;
         populateIdentity(currentPatientData, currentCaseDetails);
         populateCaseInfo(currentCaseDetails);
         populateInsuranceSelectors(currentPatientData || {});
+      } catch (e) {
+        console.error('[onPatientChange]', e);
+        clearDossier();
+      } finally {
+        showClinicalSkeleton(false);
       }
-      catch (e) { console.error(e); clearDossier(); }
       switchClinicalTab(activeClinicalTab);
       loadDocuments(currentPatientId);
     }
@@ -980,10 +1142,6 @@
       });
     }
 
-    function openPurgeModal() {
-      if (!currentPatientId) { alert('Select a patient first.'); return; }
-      openOpsModal('purge');
-    }
 
     // ── Clinical Tabs ──────────────────────────────────────────────────────
     function switchClinicalTab(tab) {
@@ -1514,53 +1672,6 @@
       batchSelectAll = true;
       const selectAllBtn = document.querySelector('[onclick="toggleSelectAll()"]');
       if (selectAllBtn) selectAllBtn.textContent = 'Deselect All';
-    }      return;
-        }
-        trackerRanges.forEach(range => {
-          for (let i = range.from; i <= range.to; i++) {
-            if (allPatientIds.includes(i.toString())) {
-              patientIds.push(i.toString());
-            }
-          }
-        });
-        if (!patientIds.length) {
-          alert('No valid patient IDs found within the specified range(s) (e.g. valid IDs: ' + allPatientIds.slice(0, 5).join(', ') + '...).');
-          return;
-        }
-      }
-
-      closeOpsModal();
-      clearLogs();
-      appendLog('📤 Spawning Patient Tracker Export job...');
-      appendLog(`📋 Selected Patients: ${patientIds.join(', ')}`);
-
-      try {
-        const r = await fetch(`${API}/api/patient_tracker_export`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ patient_ids: patientIds })
-        });
-
-        if (!r.ok) {
-          throw new Error(await r.text() || 'Export failed');
-        }
-
-        const blob = await r.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'patient_tracker_export.csv';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-
-        appendLog('✅ Patient Tracker Export CSV downloaded successfully.');
-        appendLog('📂 File saved to generated_output/patient-data/patient_tracker_export.csv');
-      } catch (e) {
-        appendLog('❌ Patient Tracker Export failed: ' + e.message);
-        alert('Patient Tracker Export failed: ' + e.message);
-      }
     }
 
     let patientRanges = [];
@@ -1695,198 +1806,6 @@
 
     function openLocalFile(path) {
       window.open('file://' + path, '_blank');
-    }
-
-    // ── Batch Purge ────────────────────────────────────────────────────────
-    function openBatchPurgeModal() {
-      const modal = document.getElementById("batch-purge-modal");
-      modal.classList.remove("hidden");
-      modal.classList.add("flex");
-
-      document.getElementById("batch-purge-patient-rows").innerHTML = allPatientIds.map(id => {
-        const name = patientNames[id] || ("Patient " + id);
-        return `
-        <tr class="hover:bg-gray-50">
-          <td class="py-2 pr-2"><input type="checkbox" class="batch-purge-patient-select lg-chk" value="${id}" checked></td>
-          <td class="py-2 pr-4 text-[11px] font-mono">${id}</td>
-          <td class="py-2 text-[11px] font-medium">${name}</td>
-        </tr>`;
-      }).join("");
-
-      batchPurgeSelectAll = true;
-      document.querySelector("[onclick=\"toggleBatchPurgeSelectAll()\"]").textContent = "Deselect All";
-    }
-
-    function closeBatchPurgeModal() {
-      const modal = document.getElementById("batch-purge-modal");
-      modal.classList.add("hidden");
-      modal.classList.remove("flex");
-    }
-
-    function toggleBatchPurgeSelectAll() {
-      batchPurgeSelectAll = !batchPurgeSelectAll;
-      document.querySelectorAll(".batch-purge-patient-select").forEach(c => c.checked = batchPurgeSelectAll);
-      document.querySelector("[onclick=\"toggleBatchPurgeSelectAll()\"]").textContent = batchPurgeSelectAll ? "Deselect All" : "Select All";
-    }
-
-    async function startBatchPurge() {
-      const checkboxes = [...document.querySelectorAll(".batch-purge-patient-select")];
-      const selectedIds = checkboxes.filter(c => c.checked).map(c => c.value);
-      if (!selectedIds.length) { alert("Select at least one patient."); return; }
-
-      const targets = [];
-      if (document.getElementById("batch-purge-persona").checked) targets.push("persona");
-      if (document.getElementById("batch-purge-reports").checked) targets.push("reports");
-      if (document.getElementById("batch-purge-summary").checked) targets.push("summary");
-      if (document.getElementById("batch-purge-logs").checked) targets.push("logs");
-      if (document.getElementById("batch-purge-db").checked) targets.push("db");
-      if (document.getElementById("batch-purge-records").checked) targets.push("records");
-      if (document.getElementById("batch-purge-debug").checked) targets.push("debug");
-      if (!targets.length) { alert("Select at least one item to purge."); return; }
-
-      const mode = document.querySelector("input[name=\"batch-purge-mode\"]:checked")?.value || "delete";
-
-      const ok = confirm(`Permanently ${mode} selected data for ${selectedIds.length} patients? This cannot be undone.`);
-      if (!ok) return;
-
-      closeBatchPurgeModal();
-      clearLogs();
-      appendLog(`🗑️ Starting batch purge for ${selectedIds.length} patients...`);
-
-      try {
-        const r = await fetch(`${API}/api/purge`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ target: "patient", patient_ids: selectedIds, mode, targets })
-        });
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error || "Batch purge failed");
-        appendLog(`✅ ${d.message || "Batch purge completed."}`);
-        // Refresh patient list and current patient view if affected
-        loadPatients();
-        if (selectedIds.includes(currentPatientId)) {
-          onPatientChange();
-        }
-      } catch (e) {
-        appendLog("❌ Batch purge failed: " + e.message);
-        alert("Batch purge failed: " + e.message);
-      }
-    }
-
-    // ── Documents ──────────────────────────────────────────────────────────
-    async function loadDocuments(pid) {
-      setDocList(null);
-      try { const r = await fetch(`${API}/api/output/${pid}`); const d = await r.json(); allFiles = d.files || []; renderDocTab(activeDocTab); }
-      catch (_) { setDocList([]); }
-    }
-
-    function switchDocTab(tab) {
-      activeDocTab = tab;
-      document.querySelectorAll('[id^="dtab-"]').forEach(b => {
-        b.className = `px-2 py-0.5 text-[9px] font-${b.id === `dtab-${tab}` ? 'black' : 'bold'} uppercase rounded transition-colors ` +
-          (b.id === `dtab-${tab}` ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-100');
-      });
-      renderDocTab(tab);
-    }
-
-    function renderDocTab(tab) {
-      if (tab === 'all') { setDocList(allFiles); return; }
-      const typeMap = { reports: ['report', 'reports'] };
-      const allowed = typeMap[tab] || [tab];
-      setDocList(allFiles.filter(f => allowed.includes(f.type)));
-    }
-
-    function setDocList(files) {
-      const list = document.getElementById('doc-list');
-      if (files === null) { list.innerHTML = '<p class="text-[11px] text-gray-400 italic animate-pulse">Loading…</p>'; return; }
-      if (!files.length) { list.innerHTML = '<p class="text-[11px] text-gray-400 italic">No documents found</p>'; return; }
-      const icons = { persona: 'person', reports: 'article', report: 'article', summary: 'summarize' };
-      list.innerHTML = files.map(f => `
-        <a onclick="openLocalFile('${f.path}')" 
-           class="group flex items-center gap-2 p-2 hover:bg-gray-50 rounded transition-colors cursor-pointer">
-            <span class="material-symbols-outlined text-gray-400 text-sm shrink-0" style="font-variation-settings:'FILL' 1;">${icons[f.type] || 'description'}</span>
-            <div class="flex-1 min-w-0">
-                <div class="text-[11px] font-medium truncate">${f.name.replace(/\.pdf$/i, '').replace(/_/g, ' ')}</div>
-                <div class="text-[9px] text-gray-400 font-mono uppercase">${f.type}</div>
-            </div>
-            <span class="material-symbols-outlined text-[13px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>
-        </a>`).join('');
-    }
-
-    // ── Batch Purge ────────────────────────────────────────────────────────
-    function openBatchPurgeModal() {
-      const modal = document.getElementById("batch-purge-modal");
-      modal.classList.remove("hidden");
-      modal.classList.add("flex");
-
-      document.getElementById("batch-purge-patient-rows").innerHTML = allPatientIds.map(id => {
-        const name = patientNames[id] || ("Patient " + id);
-        return `
-        <tr class="hover:bg-gray-50">
-          <td class="py-2 pr-2"><input type="checkbox" class="batch-purge-patient-select lg-chk" value="${id}" checked></td>
-          <td class="py-2 pr-4 text-[11px] font-mono">${id}</td>
-          <td class="py-2 text-[11px] font-medium">${name}</td>
-        </tr>`;
-      }).join("");
-
-      batchPurgeSelectAll = true;
-      document.querySelector("[onclick=\"toggleBatchPurgeSelectAll()\"]").textContent = "Deselect All";
-    }
-
-    function closeBatchPurgeModal() {
-      const modal = document.getElementById("batch-purge-modal");
-      modal.classList.add("hidden");
-      modal.classList.remove("flex");
-    }
-
-    function toggleBatchPurgeSelectAll() {
-      batchPurgeSelectAll = !batchPurgeSelectAll;
-      document.querySelectorAll(".batch-purge-patient-select").forEach(c => c.checked = batchPurgeSelectAll);
-      document.querySelector("[onclick=\"toggleBatchPurgeSelectAll()\"]").textContent = batchPurgeSelectAll ? "Deselect All" : "Select All";
-    }
-
-    async function startBatchPurge() {
-      const checkboxes = [...document.querySelectorAll(".batch-purge-patient-select")];
-      const selectedIds = checkboxes.filter(c => c.checked).map(c => c.value);
-      if (!selectedIds.length) { alert("Select at least one patient."); return; }
-
-      const targets = [];
-      if (document.getElementById("batch-purge-persona").checked) targets.push("persona");
-      if (document.getElementById("batch-purge-reports").checked) targets.push("reports");
-      if (document.getElementById("batch-purge-summary").checked) targets.push("summary");
-      if (document.getElementById("batch-purge-logs").checked) targets.push("logs");
-      if (document.getElementById("batch-purge-db").checked) targets.push("db");
-      if (document.getElementById("batch-purge-records").checked) targets.push("records");
-      if (document.getElementById("batch-purge-debug").checked) targets.push("debug");
-      if (!targets.length) { alert("Select at least one item to purge."); return; }
-
-      const mode = document.querySelector("input[name=\"batch-purge-mode\"]:checked")?.value || "delete";
-
-      const ok = confirm(`Permanently ${mode} selected data for ${selectedIds.length} patients? This cannot be undone.`);
-      if (!ok) return;
-
-      closeBatchPurgeModal();
-      clearLogs();
-      appendLog(`🗑️ Starting batch purge for ${selectedIds.length} patients...`);
-
-      try {
-        const r = await fetch(`${API}/api/purge`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ target: "patient", patient_ids: selectedIds, mode, targets })
-        });
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error || "Batch purge failed");
-        appendLog(`✅ ${d.message || "Batch purge completed."}`);
-        // Refresh patient list and current patient view if affected
-        loadPatients();
-        if (selectedIds.includes(currentPatientId)) {
-          onPatientChange();
-        }
-      } catch (e) {
-        appendLog("❌ Batch purge failed: " + e.message);
-        alert("Batch purge failed: " + e.message);
-      }
     }
   </script>
 </body>

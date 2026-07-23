@@ -61,6 +61,14 @@ def get_all_patient_names() -> List[str]:
     return get_repository().get_all_patient_names()
 
 
+def get_patient_names_bulk(patient_ids: List[str]) -> Dict[str, str]:
+    """
+    Returns {patient_id: 'First Last'} for the given IDs in a single DB operation.
+    IDs not found in the DB are omitted; the caller should fall back to 'Patient {id}'.
+    """
+    return get_repository().get_patient_names_bulk(patient_ids)
+
+
 def list_patient_ids() -> List[str]:
     """Returns list of all patient IDs currently in DB from active backend."""
     return get_repository().list_patient_ids()

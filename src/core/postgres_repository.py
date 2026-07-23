@@ -228,6 +228,39 @@ class PostgresPatientRepository(PatientRepository):
         finally:
             conn.close()
 
+    def get_patient_names_bulk(self, patient_ids: List[str]) -> Dict[str, str]:
+        """
+        Fetch first_name + last_name for a list of IDs in a single query.
+        Returns {patient_id: 'First Last'} for IDs that exist in the DB.
+        IDs not found are omitted (caller should fall back to 'Patient {id}').
+        """
+        if not patient_ids:
+            return {}
+        self._init_db()
+        conn = self._connect()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    SELECT patient_id, first_name, last_name, persona_data
+                    FROM {self.schema}.patients
+                    WHERE patient_id = ANY(%s);
+                    """,
+                    (patient_ids,)
+                )
+                rows = cur.fetchall()
+            result: Dict[str, str] = {}
+            for pid, first, last, persona in rows:
+                if first or last:
+                    result[str(pid)] = f"{first} {last}".strip()
+                elif persona and persona.get("name"):
+                    result[str(pid)] = persona.get("name")
+            return result
+        except Exception as e:
+            raise RuntimeError(f"PostgreSQL Bulk Get Patient Names Error: {e}")
+        finally:
+            conn.close()
+
     def list_patient_ids(self) -> List[str]:
         self._init_db()
         conn = self._connect()

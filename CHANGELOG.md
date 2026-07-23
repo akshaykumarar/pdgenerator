@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to Semantic Versioning.
 
 ---
+## [8.2.1] - 2026-07-23
+
+### Fixed
+- Fixed frontend script execution crash in `ui/index.html` by removing event listener for deleted `batch-purge-modal` and cleaning up dangling tracker export and duplicated functions.
+- Resolved backend `/api/patients` endpoint crash in `api_server.py` by adding connection error handling and fallback name placeholder (`Patient {id}`) when PostgreSQL database is offline/unreachable.
+
+---
+
+## [8.2.0] - 2026-07-23
+
+### Added
+- Expanded PostgreSQL schema with tables for `insurance_providers`, `insurance_plans`, and `cpt_code_map` (`src/core/schema.sql`).
+- PostgreSQL repository methods to load and save insurance and CPT map configs (`src/core/postgres_repository.py`).
+- Unified bidirectional migration utility `migrate_data.py` supporting sync strategies.
+- DB status connection indicator and ribbon error banner (`#db-error-banner`) in `ui/index.html`.
+
+### Changed
+- Refactored `/api/status` in `api_server.py` to check active database connections.
+
+### Removed
+- Removed legacy `src/doc_generation/patient_tracker_export.py`, legacy migration scripts, and associated UI elements.
+
+---
 
 ## [8.1.0] - 2026-07-21
 

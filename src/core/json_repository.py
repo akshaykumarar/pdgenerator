@@ -138,6 +138,18 @@ class JSONPatientRepository(PatientRepository):
                 names.append(name)
         return names
 
+    def get_patient_names_bulk(self, patient_ids: List[str]) -> Dict[str, str]:
+        """
+        Returns {patient_id: 'First Last'} for each ID that has a saved JSON record.
+        IDs without a record are omitted.
+        """
+        result: Dict[str, str] = {}
+        for pid in patient_ids:
+            name = self.get_patient_name(pid)
+            if name:
+                result[pid] = name
+        return result
+
     def list_patient_ids(self) -> List[str]:
         if not os.path.exists(self.db_dir):
             return []

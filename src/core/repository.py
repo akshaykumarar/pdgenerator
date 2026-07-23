@@ -34,6 +34,19 @@ class PatientRepository:
         """
         raise NotImplementedError
 
+    def get_patient_names_bulk(self, patient_ids: List[str]) -> Dict[str, str]:
+        """
+        Returns a dict of {patient_id: 'First Last'} for the given list of IDs.
+        IDs not found in the storage are omitted from the result.
+        Default implementation falls back to individual get_patient_name calls.
+        """
+        result: Dict[str, str] = {}
+        for pid in patient_ids:
+            name = self.get_patient_name(pid)
+            if name:
+                result[pid] = name
+        return result
+
     def list_patient_ids(self) -> List[str]:
         """
         Returns a list of all patient IDs (as strings) currently in the storage.

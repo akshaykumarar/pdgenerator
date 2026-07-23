@@ -24,6 +24,7 @@ load_dotenv(os.path.join(BASE_DIR, "cred", ".env"))
 from src.data import loader as data_loader
 from src.core import patient_db
 from src.core import insurance_config
+from src.core import name_cache
 
 # Refresh CPT code mapping from UAT Plan on server startup
 try:
@@ -575,7 +576,11 @@ def api_status():
 @app.route("/api/patients")
 def api_patients():
     """
-    Return all patient IDs from the Excel plan and their current names from the database.
+    Return all patient IDs from the Excel plan and their display names.
+
+    Names are served instantly from a local disk cache (core/patient_name_cache.json).
+    A background daemon thread refreshes names from the active DB backend so that
+    subsequent loads see real generated names without blocking the response.
     ---
     tags:
       - Patients
@@ -585,17 +590,31 @@ def api_patients():
     """
     try:
         ids = data_loader.get_all_patient_ids()
-        patient_names = {}
-        for p_id in ids:
-            name = patient_db.get_patient_name(p_id)
-            if name:
-                patient_names[p_id] = name
-            else:
-                patient_names[p_id] = f"Patient {p_id}"
+
+        # 1. Serve immediately from local disk cache — no DB wait.
+        cached = name_cache.load_cache()
+        patient_names = {p_id: cached.get(p_id, f"Patient {p_id}") for p_id in ids}
+
+        # 2. Refresh cache from DB in the background — does NOT block the response.
+        def _refresh_names_bg():
+            try:
+                db_names = patient_db.get_patient_names_bulk(ids)
+                if db_names:
+                    # DB names take priority; preserve any extra cached entries.
+                    merged = {**cached, **db_names}
+                    name_cache.save_cache(merged)
+            except Exception as bg_err:
+                bg_backend = os.getenv("PATIENT_STORAGE_BACKEND", "json").strip().lower()
+                print(f"[INFO] Background name cache refresh skipped [{bg_backend} mode]: {bg_err}")
+
+        threading.Thread(target=_refresh_names_bg, daemon=True).start()
+
         return jsonify({"patients": ids, "patient_names": patient_names})
     except Exception as e:
         backend = os.getenv("PATIENT_STORAGE_BACKEND", "json").strip().lower()
         return jsonify({"error": f"Database Error [{backend} mode]: {str(e)}"}), 500
+
+
 
 
 @app.route("/api/patient/<patient_id>")
