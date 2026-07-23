@@ -1,8 +1,7 @@
 import os
 import tempfile
 import pytest
-from migrate_json_to_postgres import migrate as migrate_to_pg
-from migrate_postgres_to_json import migrate as migrate_to_json
+from migrate_data import migrate
 from src.core.json_repository import JSONPatientRepository
 from src.core.postgres_repository import PostgresPatientRepository
 
@@ -54,7 +53,7 @@ def test_migration_and_reverse_migration(monkeypatch):
         assert postgres_repo.load_patient("999") is None
 
         # 4. Run JSON -> Postgres migration (strategy=update)
-        migrate_to_pg(strategy="update", json_path=temp_json_path)
+        migrate(direction="json_to_db", entity="patients", strategy="update", json_path=temp_json_path)
 
         # Verify record migrated to Postgres database
         loaded_pg = postgres_repo.load_patient("999")
@@ -72,7 +71,7 @@ def test_migration_and_reverse_migration(monkeypatch):
         assert dest_json_repo.load_patient("999") is None
 
         # 6. Run Postgres -> JSON reverse migration (strategy=update)
-        migrate_to_json(strategy="update", json_path=temp_json_path)
+        migrate(direction="db_to_json", entity="patients", strategy="update", json_path=temp_json_path)
 
         # Verify modified record migrated back to JSON database
         loaded_json = dest_json_repo.load_patient("999")
@@ -87,17 +86,17 @@ def test_migration_and_reverse_migration(monkeypatch):
         # A: Strategy 'skip'
         # Postgres has 'MigrationModified'. JSON has 'ConflictJSON'.
         # Migrating JSON -> Postgres with strategy='skip' should leave Postgres unchanged.
-        migrate_to_pg(strategy="skip", json_path=temp_json_path)
+        migrate(direction="json_to_db", entity="patients", strategy="skip", json_path=temp_json_path)
         assert postgres_repo.load_patient("999")["first_name"] == "MigrationModified"
 
         # B: Strategy 'fail'
         # Migrating JSON -> Postgres with strategy='fail' should raise RuntimeError
         with pytest.raises(RuntimeError):
-            migrate_to_pg(strategy="fail", json_path=temp_json_path)
+            migrate(direction="json_to_db", entity="patients", strategy="fail", json_path=temp_json_path)
 
         # C: Strategy 'update'
         # Migrating JSON -> Postgres with strategy='update' should overwrite Postgres
-        migrate_to_pg(strategy="update", json_path=temp_json_path)
+        migrate(direction="json_to_db", entity="patients", strategy="update", json_path=temp_json_path)
         assert postgres_repo.load_patient("999")["first_name"] == "ConflictJSON"
 
     finally:

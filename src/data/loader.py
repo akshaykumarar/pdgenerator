@@ -48,7 +48,8 @@ def _extract_cpt_code(*values: str) -> str:
 
 def refresh_cpt_code_map() -> dict:
     """
-    Build a CPT code mapping from the UAT Plan and persist to core/cpt_code_map.json.
+    Build a CPT code mapping from the UAT Plan and persist to core/cpt_code_map.json
+    and PostgreSQL if active.
     Returns the mapping dict.
     """
     mapping = {"by_code": {}, "by_procedure": {}, "updated_at": datetime.datetime.now().isoformat()}
@@ -89,6 +90,14 @@ def refresh_cpt_code_map() -> dict:
         with open(CPT_MAP_PATH, "w", encoding="utf-8") as f:
             json.dump(mapping, f, indent=2)
 
+        backend = os.getenv("PATIENT_STORAGE_BACKEND", "json").strip().lower()
+        if backend == "postgres":
+            try:
+                from core.postgres_repository import PostgresPatientRepository
+                PostgresPatientRepository().save_cpt_code_map(mapping)
+            except Exception:
+                pass
+
     except Exception as e:
         print(f"Error building CPT map: {e}")
 
@@ -96,6 +105,16 @@ def refresh_cpt_code_map() -> dict:
 
 
 def get_cpt_code_map() -> dict:
+    backend = os.getenv("PATIENT_STORAGE_BACKEND", "json").strip().lower()
+    if backend == "postgres":
+        try:
+            from core.postgres_repository import PostgresPatientRepository
+            db_map = PostgresPatientRepository().load_cpt_code_map()
+            if db_map and db_map.get("by_code"):
+                return db_map
+        except Exception:
+            pass
+
     if os.path.exists(CPT_MAP_PATH):
         try:
             with open(CPT_MAP_PATH, "r", encoding="utf-8") as f:
@@ -103,6 +122,7 @@ def get_cpt_code_map() -> dict:
         except Exception:
             return {}
     return {}
+
 
 def _get_patient_id_column(df: pd.DataFrame) -> str:
     """Helper: Identifies the Patient ID column."""
@@ -123,12 +143,14 @@ def _get_patient_id_column(df: pd.DataFrame) -> str:
                     continue
     return 'Patient ID' # Default fallback
 
+
 def _normalize_id(raw_val) -> str:
     """Helper: Standardizes Patient ID format."""
     try:
         return str(int(float(raw_val)))
     except:
         return str(raw_val).strip()
+
 
 def load_patient_case(target_id: str):
     """

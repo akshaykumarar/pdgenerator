@@ -17,15 +17,58 @@ CREATE TABLE IF NOT EXISTS pdgenerator.patients (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Indexes for Query Optimization & Deduplication
--- Index for quick sorting and lookups by patient name
+-- Indexes for Query Optimization & Deduplication
 CREATE INDEX IF NOT EXISTS idx_patients_name 
     ON pdgenerator.patients(last_name, first_name);
 
--- Index for searching and filtering by date of birth
 CREATE INDEX IF NOT EXISTS idx_patients_dob 
     ON pdgenerator.patients(dob);
 
--- GIN Index for deep, index-supported queries inside JSONB persona_data
 CREATE INDEX IF NOT EXISTS idx_patients_persona_gin 
     ON pdgenerator.patients USING gin(persona_data);
+
+
+-- 2. Create Insurance Providers Table
+CREATE TABLE IF NOT EXISTS pdgenerator.insurance_providers (
+    provider_id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    abbreviation VARCHAR(50),
+    policy_url TEXT,
+    is_default BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- 3. Create Insurance Plans Table
+CREATE TABLE IF NOT EXISTS pdgenerator.insurance_plans (
+    plan_id VARCHAR(100) PRIMARY KEY,
+    provider_id VARCHAR(50) NOT NULL REFERENCES pdgenerator.insurance_providers(provider_id) ON DELETE CASCADE,
+    plan_name VARCHAR(255) NOT NULL,
+    plan_type VARCHAR(100) NOT NULL,
+    policy_url TEXT,
+    is_default BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_insurance_plans_provider 
+    ON pdgenerator.insurance_plans(provider_id);
+
+CREATE INDEX IF NOT EXISTS idx_insurance_plans_type 
+    ON pdgenerator.insurance_plans(plan_type);
+
+
+-- 4. Create CPT / HCPCS Code Mapping Table
+CREATE TABLE IF NOT EXISTS pdgenerator.cpt_code_map (
+    cpt_code VARCHAR(50) PRIMARY KEY,
+    procedure_name TEXT NOT NULL,
+    department VARCHAR(100),
+    test_case VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Index for fast case-insensitive lookup by procedure name
+CREATE INDEX IF NOT EXISTS idx_cpt_procedure_lower 
+    ON pdgenerator.cpt_code_map (LOWER(procedure_name));

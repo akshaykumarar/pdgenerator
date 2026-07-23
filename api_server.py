@@ -566,7 +566,10 @@ def api_patients():
         ids = data_loader.get_all_patient_ids()
         patient_names = {}
         for p_id in ids:
-            name = patient_db.get_patient_name(p_id)
+            try:
+                name = patient_db.get_patient_name(p_id)
+            except Exception:
+                name = None
             if name:
                 patient_names[p_id] = name
             else:
@@ -576,76 +579,16 @@ def api_patients():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/patient_tracker_export", methods=["POST"])
-def api_patient_tracker_export():
-    """
-    Generate a prior authorization patient tracker CSV.
-    Returns the CSV as a direct download attachment.
-    ---
-    tags:
-      - Reports
-    parameters:
-      - in: body
-      - name: body
-        required: true
-        schema:
-          type: object
-          properties:
-            patient_ids:
-              type: array
-              items:
-                type: string
-              description: List of patient IDs to export
-    responses:
-      200:
-        description: CSV attachment containing the clinical priority table
-      400:
-        description: No patient IDs or invalid request
-      500:
-        description: Generation failure
-    """
-    try:
-        data = request.get_json() or {}
-        patient_ids = data.get("patient_ids", [])
-        if not patient_ids:
-            return jsonify({"error": "No patient IDs provided"}), 400
-            
-        normalized_ids = []
-        for p_id in patient_ids:
-            clean_id = str(p_id).strip()
-            clean_id = "".join(c for c in clean_id if c.isalnum() or c in "-_")
-            if clean_id:
-                normalized_ids.append(clean_id)
-                
-        if not normalized_ids:
-            return jsonify({"error": "No valid patient IDs found"}), 400
-            
-        from src.doc_generation.patient_tracker_export import generate_tracker_export
-        csv_path = generate_tracker_export(normalized_ids)
-        
-        if not os.path.exists(csv_path):
-            return jsonify({"error": "Failed to generate export file"}), 500
-            
-        directory = os.path.dirname(csv_path)
-        filename = os.path.basename(csv_path)
-        
-        return send_from_directory(
-            directory,
-            filename,
-            as_attachment=True,
-            download_name="patient_tracker_export.csv",
-            mimetype="text/csv"
-        )
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
 
 
 @app.route("/api/patient/<patient_id>")
 def api_get_patient(patient_id: str):
     """Return the current DB record for a patient plus UAT case details."""
-    record = patient_db.load_patient(patient_id)
+    record = None
+    try:
+        record = patient_db.load_patient(patient_id)
+    except Exception:
+        record = None
 
     # Enrich with case/UAT info from the Excel plan so the UI can show
     # case type, expected outcome, CPT/ICD codes without a separate call.
@@ -1170,76 +1113,6 @@ def api_download_file(patient_id: str, file_type: str, filename: str):
     
     # Force inline viewing by explicitly setting mimetype and disposition
     return send_from_directory(directory, filename, mimetype='application/pdf', as_attachment=False)
-
-
-@app.route("/api/purge", methods=["POST"])
-def api_purge():
-    """
-    Purge specific databases or generated files
-    ---
-    tags:
-      - System
-    parameters:
-      - in: body
-        name: body
-        required: true
-        schema:
-          type: object
-          properties:
-            target:
-              type: string
-              enum: [all, personas, documents, summaries_only, reports_only, patient]
-            patient_id:
-              type: string
-            mode:
-              type: string
-              enum: [delete, archive]
-            targets:
-              type: array
-              items:
-                type: string
-              description: "For target=patient: persona, reports, summary, logs, db, records, debug"
-    responses:
-      200:
-        description: Purge successful
-    """
-    from src.utils import purge_manager
-    body = request.get_json(force=True) or {}
-    target = body.get("target")
-
-    try:
-        if target == "all":
-            purge_manager.purge_all(force=True)
-        elif target == "personas":
-            purge_manager.purge_personas(force=True)
-        elif target == "documents":
-            purge_manager.purge_documents(force=True)
-        elif target == "summaries_only":
-            purge_manager.purge_summaries_only(force=True)
-        elif target == "reports_only":
-            purge_manager.purge_reports_only(force=True)
-        elif target == "patient":
-            patient_ids = body.get("patient_ids", [])
-            if not patient_ids:
-                p_id = body.get("patient_id")
-                if not p_id:
-                    return jsonify({"error": "patient_id or patient_ids required"}), 400
-                patient_ids.append(p_id)
-            
-            mode = body.get("mode", "delete")
-            targets = body.get("targets")
-
-            for p_id in patient_ids:
-                if targets:
-                    purge_manager.purge_patient_selective(p_id, targets, mode=mode, force=True)
-                else:
-                    purge_manager.purge_patient(p_id, force=True)
-        else:
-            return jsonify({"error": "Invalid target"}), 400
-            
-        return jsonify({"ok": True, "message": f"Purged {target} successfully"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/template/save", methods=["POST"])

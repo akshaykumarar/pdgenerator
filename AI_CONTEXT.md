@@ -501,6 +501,13 @@ Workflow continues gracefully.
 * **Macro-Gap Injection**: Added a new `Macro-Gap` archetype class (MG-001/MG-002) for denial cases, allowing the system to omit specialist notes or critical diagnostic reports. Updated the selection logic to always include at least one macro-level gap.
 * **Medication Prompt Updates**: Added minor adjustments to the medication prompt guidelines to clarify that "procedure" refers to drug administration, explicitly require step-therapy formulary exception details, and pattern medication-specific encounter records (e.g., infusion center visits).
 
+### v8.2 Database Architecture & Cleanup (2026-07-23)
+* **Expanded PostgreSQL Schema**: Added DDL tables for `insurance_providers`, `insurance_plans`, and `cpt_code_map` with B-tree and unique indexes (`src/core/schema.sql`).
+* **PostgreSQL Repository Methods**: Implemented `load_insurance_config()`, `save_insurance_config()`, `load_cpt_code_map()`, and `save_cpt_code_map()` in `src/core/postgres_repository.py`.
+* **Unified Bidirectional Migration**: Created single CLI script `migrate_data.py` supporting bidirectional sync (`json_to_db` and `db_to_json`) for `all`, `patients`, `insurance`, and `cpt` entities with `--strategy update|skip|fail`. Deleted legacy scripts `migrate_json_to_postgres.py` and `migrate_postgres_to_json.py`.
+* **Redundant Code & UI Cleanup**: Removed legacy `src/doc_generation/patient_tracker_export.py`, `@app.route("/api/patient_tracker_export")`, `@app.route("/api/purge")`, and associated HTML/JS elements for Batch Purge and Tracker Export in `ui/index.html`.
+* **Defensive API Error Handling**: Enhanced `/api/patients` and `/api/patient/<patient_id>` in `api_server.py` with try/except wrappers to handle database network failures gracefully without returning HTTP 500 errors.
+
 ### v7.0 Prior Authorization Tracker CSV Export Transition (2026-05-22)
 * **High-Fidelity CSV Exporter**: Replaced the ReportLab landscape PDF and companion TSV with a single, premium standard CSV file (`patient_tracker_export.csv`) located directly inside `generated_output/patient-data/`.
 * **HTML Sanitization**: Ensured all cells in the exported CSV are completely sanitized of HTML tags, using standard newlines (`\n`) and plain text bullets (`- `) to ensure compatibility with Microsoft Excel copy-pasting.
