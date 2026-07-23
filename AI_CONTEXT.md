@@ -494,6 +494,9 @@ Workflow continues gracefully.
 
 # Maintenance & Updates
 
+### v8.6 Summary PDF Exclusion from Scan Filter (2026-07-23)
+* **Summary PDF Exclusion**: Updated workflow processing (`src/workflow.py` and `src/utils/file_utils.py`) to exclude summary documents (`Clinical_Summary_Patient_*.pdf`) from post-processing scan filter rasterization when `scan_mode` (realistic document setting) is enabled. Summary documents remain clean vector PDFs for verification while clinical reports and personas receive scan simulation.
+
 ### v8.5 Medicine PA Logic & Document Structure (2026-07-23)
 * **Medicine-Specific Data Models**: Extended `PARequestDetails` and `MedicationEntry` in `src/ai/models.py` with 11-digit NDC codes (`ndc_code`), HCPCS drug codes (`hcpcs_code`), administration route, dosing frequency, days supply, refills, and `step_therapy_failed_agents`.
 * **Conditional Infusion Order Templates**: Updated `templates/document_plan_rules.json` and `src/doc_generation/planner.py` to route `medication` case types strictly to medicine-specific supporting documents (consult notes, medication history logs, baseline lab reports) and conditionally attach `infusion_order_template.json` only when clinically indicated for provider-administered/infusion drugs.

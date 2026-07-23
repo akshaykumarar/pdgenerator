@@ -304,6 +304,7 @@ Handles compiling clinical Prior Authorization patient metrics for a selected su
 
 Handles post-processing simulation to turn clean, selectable vector PDFs into flat, image-only scanned-looking files.
 - **Conversion Pipeline**: Converts each PDF page into a high-DPI image buffer using PyMuPDF (`fitz`), skews/rotates the image slightly to simulate feeding errors, introduces Gaussian sensor noise, applies a lighting gradient overlay for uneven scanner shadows, adds optional paper tints, and compiles the images back into an image-only PDF.
+- **Summary Document Exclusion**: Summary documents (`Clinical_Summary_Patient_*.pdf`) are automatically excluded from the scan filter via `is_summary_pdf()` in `src/workflow.py`, ensuring summary PDFs remain crisp and selectable digital vector documents.
 
 The interface is defined in `index.html` (Material You dark theme) and wires dynamically to the API server at `http://localhost:410`.
 

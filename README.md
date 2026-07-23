@@ -31,6 +31,7 @@
 ### 5. Visual Scan Simulation Filter
 - **Rasterized Image Filter**: Flat-renders vector PDFs to flat, image-only documents using `PyMuPDF` (`fitz`), Pillow, and NumPy, making them look physically scanned.
 - **Adjustable Degradation Artifacts**: Features Light, Medium, and Heavy presets simulating feeding skews, sensor noise, light gradient shadows, lens blur, dust speckles, and aged paper tints.
+- **Summary Document Exclusion**: Summary documents (`Clinical_Summary_Patient_*.pdf`) are automatically excluded from scan filtering, keeping clinical summaries as clean digital vector PDFs.
 
 ### 6. Concise Clinical Summary
 - Generates a 5-part summary for case evaluators:
